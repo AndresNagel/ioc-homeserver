@@ -20,6 +20,7 @@ proxmox_api_token_id: automation
 proxmox_ssh_authorized_keys:
   - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFAMs3638qDEv2aV+iqpfSzOHKris8Njf+XwHZYqkj07 shishkaberry@kiwi"
   - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDi4Yb+vHPdnusKUARuE/tiwIltE5/iK6cjPi/jGbWx+bzUffqtcTogK9gLxItH/f4s+8EWJ46VsyK0q6gZetp85E5sJypsTP2U2CJyHy9lZ/6o2c8YWe476fiBgpC07sPPfdYa5+Q97vUHEZghHpiZr1m4TCAd6J9soIddB6yxugTPsxyce7YOIwF17jhHhcyexDoQC0Qw3RQfpBKO5n7i1wCyjoIWg4QY6d6xxP+QpPUDlgTqgdgI6eQRXxB0VCGoFRpWHD3yqgMoVqMSlEyhmNnmxYi5iVuzx+3Hdk5eRofwltKqlx+54tl6LJkPyN8zRwUAtZhJ4OnH7x+aQRVKpoyRncrkRK+Z9DbXwBJP+UohWpJKP75MziYaZWF33hNm405pMmtJI+BzV/LmHq2h93h2qJ+10W5dcbDtDoTl/hUTpCTJRG6rrNwtmpQ+eGz/Dyw1s+yjUgoiKFNmktGcxtQ+zWUvg3mEz78CFa7EPonr0QaQVUZrKbTOp7gnjNMszInO6bV68STNlQJdoSauCD+KrEEr4HBCLi8KcIehTa+6f14xe++sfrRowyCXRF3Talxl9LzbB23WMfdreBy/At58KrvSngLdOJHZMMbxhSSPXj5/B1sHQPC2FcdZNKmmbLNfPsH8HIRg0XfJFmin7PJ21a+WGa38uJDrE86ppw== root@proxmox"
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINapB74lf9QBlqFEKNi8QDUu6XAyiK89M6NSPawUdt2d semaphore-automation@homeserver"
 
 # --- Timezone ---
 timezone: Europe/Madrid               # change to your TZ
