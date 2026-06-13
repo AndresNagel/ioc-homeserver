@@ -1,0 +1,36 @@
+---
+# roles/homepage/tasks/main.yml
+# Deploys the Homepage dashboard (docker container on the Proxmox host,
+# /opt/homepage, port 3000) as a replacement for Homarr/dashdot, which were
+# decommissioned after AppArmor 4.x (PVE9/trixie) broke their AF_UNIX-based
+# child process IPC.
+
+- name: Ensure /opt/homepage/config directory exists
+  file:
+    path: /opt/homepage/config
+    state: directory
+    mode: '0755'
+
+- name: Deploy Homepage docker-compose.yml
+  copy:
+    src: docker-compose.yml
+    dest: /opt/homepage/docker-compose.yml
+    mode: '0644'
+
+- name: Deploy Homepage config files
+  copy:
+    src: "config/{{ item }}"
+    dest: "/opt/homepage/config/{{ item }}"
+    mode: '0644'
+  loop:
+    - settings.yaml
+    - services.yaml
+    - widgets.yaml
+    - bookmarks.yaml
+
+- name: Start Homepage
+  command: docker compose up -d
+  args:
+    chdir: /opt/homepage
+  register: homepage_up
+  changed_when: "'Creating' in homepage_up.stderr or 'Recreating' in homepage_up.stderr or 'Starting' in homepage_up.stderr"

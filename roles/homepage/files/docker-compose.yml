@@ -1,0 +1,12 @@
+services:
+  homepage:
+    container_name: homepage
+    image: ghcr.io/gethomepage/homepage:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config:/app/config
+      - /mnt/ssd2tb:/mnt/ssd2tb:ro
+    environment:
+      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.253:3000,homepage.internal:3000
+    restart: unless-stopped

@@ -45,14 +45,26 @@
   changed_when: false
 
 # --- Custom local DNS records ---
+# FTL doesn't pick up new dns.hosts entries until restarted, so detect a
+# real change (comparing against FTL's own "[ a, b, c ]" print format) and
+# restart FTL only when the list actually differs.
+- name: Get current custom local DNS records
+  ansible.builtin.command:
+    argv: [pihole-FTL, --config, dns.hosts]
+  register: pihole_dns_hosts_current
+  changed_when: false
+
 - name: Set custom local DNS records
+  vars:
+    pihole_dns_hosts_list: "{{ (pihole_custom_dns | map(attribute='ip') | list | zip(pihole_custom_dns | map(attribute='name') | list)) | map('join', ' ') | list }}"
   ansible.builtin.command:
     argv:
       - pihole-FTL
       - --config
       - dns.hosts
-      - "{{ (pihole_custom_dns | map(attribute='ip') | list | zip(pihole_custom_dns | map(attribute='name') | list)) | map('join', ' ') | list | to_json }}"
-  changed_when: false
+      - "{{ pihole_dns_hosts_list | to_json }}"
+  changed_when: pihole_dns_hosts_current.stdout | trim != '[ ' + (pihole_dns_hosts_list | join(', ')) + ' ]'
+  notify: Restart pihole-FTL
 
 # --- Adlists ---
 - name: Template adlist SQL

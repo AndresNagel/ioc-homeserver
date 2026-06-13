@@ -1,0 +1,68 @@
+---
+- Media:
+    - Jellyfin:
+        icon: jellyfin.png
+        href: http://192.168.1.102:8096
+        description: Media server
+
+    - Navidrome:
+        icon: navidrome.png
+        href: http://192.168.1.106:4533
+        description: Music streaming
+
+- Arr Suite:
+    - Sonarr:
+        icon: sonarr.png
+        href: http://192.168.1.104:8989
+        description: TV management
+
+    - Radarr:
+        icon: radarr.png
+        href: http://192.168.1.105:7878
+        description: Movie management
+
+    - Lidarr:
+        icon: lidarr.png
+        href: http://192.168.1.101:8686
+        description: Music management
+
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://192.168.1.110:9696
+        description: Indexer management
+
+    - Bazarr:
+        icon: bazarr.png
+        href: http://192.168.1.112:6767
+        description: Subtitles
+
+    - Transmission:
+        icon: transmission.png
+        href: http://192.168.1.103:9091/transmission/web
+        description: Torrent client
+
+    - Flaresolverr:
+        icon: flaresolverr.png
+        href: http://192.168.1.111:8191
+        description: Cloudflare bypass proxy
+
+- Infrastructure:
+    - Proxmox:
+        icon: proxmox.png
+        href: https://192.168.1.253:8006
+        description: Hypervisor
+
+    - Pi-hole:
+        icon: pi-hole.png
+        href: http://192.168.1.100/admin
+        description: DNS / ad-block
+
+    - Semaphore:
+        icon: semaphore.png
+        href: http://192.168.1.27:3000
+        description: Ansible CI/CD
+
+    - Forgejo:
+        icon: forgejo.png
+        href: http://192.168.1.28:3001
+        description: Git hosting

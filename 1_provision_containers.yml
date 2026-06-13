@@ -148,3 +148,17 @@
   gather_facts: false
   roles:
     - role: proxmox_lxc
+
+# --- Bazarr ---
+# Full /mnt/ssd2tb mounted at /data so Bazarr can read/write subtitles
+# alongside the series/movies libraries used by Sonarr and Radarr
+- name: Provision Bazarr LXC
+  hosts: bazarr
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_disk: 4
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb,mp=/data"
+          mp1: "/mnt/ssd2tb/configs/bazarr,mp=/var/lib/bazarr"

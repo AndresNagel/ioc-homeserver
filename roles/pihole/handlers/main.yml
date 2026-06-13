@@ -4,3 +4,8 @@
 - name: Update gravity
   command: pihole -g
   listen: Update gravity
+
+- name: Restart pihole-FTL
+  systemd:
+    name: pihole-FTL
+    state: restarted

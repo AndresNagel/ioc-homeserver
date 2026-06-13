@@ -16,4 +16,4 @@
   roles:
     - proxmox_host
     - media_tools
-    - homarr
+    - homepage

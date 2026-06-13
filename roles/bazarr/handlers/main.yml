@@ -1,0 +1,11 @@
+---
+# roles/bazarr/handlers/main.yml
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: Restart bazarr
+  systemd:
+    name: bazarr
+    state: restarted

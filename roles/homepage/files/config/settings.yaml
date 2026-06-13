@@ -1,0 +1,15 @@
+---
+title: Homeserver
+theme: dark
+headerStyle: boxed
+
+layout:
+  Media:
+    style: row
+    columns: 2
+  Arr Suite:
+    style: row
+    columns: 4
+  Infrastructure:
+    style: row
+    columns: 4

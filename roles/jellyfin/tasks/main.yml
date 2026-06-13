@@ -76,8 +76,27 @@
       - string: vc1
   register: encoding_codecs
 
+# The container's rootfs is only 8GB and fills up fast with HLS transcode
+# segments (e.g. live-transcode sessions can leave several GB behind),
+# causing "No space left on device" and fatal playback errors. Redirect
+# the transcode cache to /data (the 1.8TB media bind mount) instead.
+- name: Ensure transcode temp directory exists on /data
+  file:
+    path: /data/transcodes
+    state: directory
+    owner: jellyfin
+    group: jellyfin
+    mode: '0750'
+
+- name: Set transcode temp path to /data/transcodes
+  community.general.xml:
+    path: /etc/jellyfin/encoding.xml
+    xpath: /EncodingOptions/TranscodingTempPath
+    value: /data/transcodes
+  register: encoding_transcode_path
+
 - name: Restart Jellyfin if hwaccel config changed
   systemd:
     name: jellyfin
     state: restarted
-  when: encoding_xml.changed or encoding_codecs.changed
+  when: encoding_xml.changed or encoding_codecs.changed or encoding_transcode_path.changed

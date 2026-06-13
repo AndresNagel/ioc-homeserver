@@ -1,0 +1,84 @@
+---
+# roles/bazarr/tasks/main.yml
+# Installs Bazarr (subtitle manager for Sonarr/Radarr) from the official
+# release zip into a Python venv, matching the bare-metal pattern used by
+# roles/arr. Config/database lives at /var/lib/bazarr, bind-mounted from
+# the host (mp1) — on a rebuild the existing config/API key is picked up
+# as-is. /data (mp0) gives Bazarr access to the same media library as
+# Sonarr/Radarr so it can read/write subtitle files.
+
+- name: Install dependencies
+  apt:
+    name:
+      - python3
+      - python3-venv
+      - python3-pip
+      - python3-dev
+      - build-essential
+      - unzip
+    state: present
+    update_cache: true
+
+- name: Download Bazarr release
+  get_url:
+    url: https://github.com/morpheus65535/bazarr/releases/latest/download/bazarr.zip
+    dest: /tmp/bazarr.zip
+    mode: '0644'
+    force: true
+
+- name: Ensure /opt/bazarr exists
+  file:
+    path: /opt/bazarr
+    state: directory
+    mode: '0755'
+
+- name: Extract Bazarr to /opt
+  unarchive:
+    src: /tmp/bazarr.zip
+    dest: /opt/bazarr
+    remote_src: true
+  notify: Restart bazarr
+
+- name: Ensure data directory exists
+  file:
+    path: /var/lib/bazarr
+    state: directory
+    mode: '0755'
+
+- name: Install Bazarr's Python dependencies into a venv
+  pip:
+    requirements: /opt/bazarr/requirements.txt
+    virtualenv: /opt/bazarr/venv
+    virtualenv_command: python3 -m venv
+  notify: Restart bazarr
+
+- name: Install systemd service
+  copy:
+    dest: /etc/systemd/system/bazarr.service
+    content: |
+      [Unit]
+      Description=Bazarr Daemon
+      After=network.target
+
+      [Service]
+      User=root
+      Group=root
+      Type=simple
+      WorkingDirectory=/opt/bazarr
+      ExecStart=/opt/bazarr/venv/bin/python3 /opt/bazarr/bazarr.py -c /var/lib/bazarr --no-update
+      TimeoutStopSec=20
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart bazarr
+
+- name: Enable and start bazarr
+  systemd:
+    name: bazarr
+    enabled: true
+    state: started
+    daemon_reload: true

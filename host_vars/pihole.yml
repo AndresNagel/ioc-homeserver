@@ -17,7 +17,7 @@ pihole_adlists:
 # mDNS/Avahi conflicts that .local causes.
 pihole_custom_dns:
   - { ip: "192.168.1.253", name: "proxmox.internal" }
-  - { ip: "192.168.1.253", name: "homarr.internal" }
+  - { ip: "192.168.1.253", name: "homepage.internal" }
   - { ip: "192.168.1.100", name: "pihole.internal" }
   - { ip: "192.168.1.101", name: "lidarr.internal" }
   - { ip: "192.168.1.102", name: "jellyfin.internal" }
@@ -29,3 +29,4 @@ pihole_custom_dns:
   - { ip: "192.168.1.110", name: "prowlarr.internal" }
   - { ip: "192.168.1.111", name: "flaresolverr.internal" }
   - { ip: "192.168.1.28",  name: "forgejo.internal" }
+  - { ip: "192.168.1.112", name: "bazarr.internal" }

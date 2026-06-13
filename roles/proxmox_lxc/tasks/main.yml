@@ -27,6 +27,22 @@
     state: present
   delegate_to: pve
 
+# Bind mount sources under /mnt/ssd2tb/configs/ pre-existed for the
+# hand-built containers but don't exist for newly added services — without
+# this, the container's pre-start hook fails ("Script exited with status 2")
+# because the host-side path is missing. Owned by 100000:100000 (the
+# default unprivileged-LXC root mapping) so the container's root user can
+# write to it, matching the hand-built containers' config dirs.
+- name: Ensure bind mount source directories exist on {{ proxmox_node }}
+  file:
+    path: "{{ item.value.split(',')[0] }}"
+    state: directory
+    mode: '0755'
+    owner: '100000'
+    group: '100000'
+  loop: "{{ (lxc_mounts | default({})) | dict2items }}"
+  delegate_to: pve
+
 # Proxmox hardcodes "Only root can pass arbitrary filesystem paths" for bind
 # mounts, checking literally `authuser eq 'root@pam'` — an API token (even one
 # for root@pam) is rejected. `pct set` run locally over SSH as root satisfies

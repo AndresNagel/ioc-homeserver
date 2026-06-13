@@ -73,3 +73,8 @@
   hosts: flaresolverr
   roles:
     - flaresolverr
+
+- name: Configure Bazarr
+  hosts: bazarr
+  roles:
+    - bazarr
