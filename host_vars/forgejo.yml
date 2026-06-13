@@ -5,8 +5,7 @@ forgejo_port: 3001
 forgejo_admin_user: homeserver-admin
 forgejo_admin_email: "andres.nagel.im@gmail.com"
 
-# GitLab push mirror for homelab-ansible repo
-# gitlab_mirror_url format: https://gitlab.com/yourusername/homelab-ansible.git
-gitlab_mirror_url: ""
-gitlab_mirror_username: "oauth2"         # GitLab uses "oauth2" as username for token auth
-# gitlab_mirror_token and secrets come from vault — see group_vars/vault.yml
+# GitHub push mirror for homelab-ansible repo (private repo must already exist)
+github_mirror_url: "https://github.com/AndresNagel/ioc-homeserver.git"
+github_mirror_username: "AndresNagel"
+# github_mirror_token comes from vault — see group_vars/all/vault.yml

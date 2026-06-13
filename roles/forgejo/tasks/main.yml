@@ -148,8 +148,8 @@
       default_branch: main
     status_code: [201, 409]   # 409 = already exists, that's fine
 
-# --- Configure GitLab push mirror (optional) ---
-- name: Set up GitLab push mirror for homelab-ansible
+# --- Configure GitHub push mirror (optional) ---
+- name: Set up GitHub push mirror for homelab-ansible
   uri:
     url: "http://{{ ansible_host }}:{{ forgejo_port }}/api/v1/repos/{{ forgejo_admin_user }}/homelab-ansible/push_mirrors"
     method: POST
@@ -158,11 +158,11 @@
     force_basic_auth: true
     body_format: json
     body:
-      remote_address: "{{ gitlab_mirror_url }}"
-      remote_username: "{{ gitlab_mirror_username }}"
-      remote_password: "{{ gitlab_mirror_token }}"
+      remote_address: "{{ github_mirror_url }}"
+      remote_username: "{{ github_mirror_username }}"
+      remote_password: "{{ github_mirror_token }}"
       sync_on_commit: true
       interval: "8h0m0s"
     status_code: [200, 201, 409]
   no_log: true
-  when: gitlab_mirror_url | default('') | length > 0
+  when: github_mirror_url | default('') | length > 0
