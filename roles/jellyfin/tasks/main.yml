@@ -1,0 +1,83 @@
+---
+# roles/jellyfin/tasks/main.yml
+
+- name: Install dependencies
+  apt:
+    name: [curl, apt-transport-https, gnupg]
+    state: present
+    update_cache: true
+
+- name: Ensure /etc/apt/keyrings exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add Jellyfin apt key
+  shell: curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key | gpg --dearmor -o /etc/apt/keyrings/jellyfin.gpg
+  args:
+    creates: /etc/apt/keyrings/jellyfin.gpg
+
+- name: Add Jellyfin apt repo
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/jellyfin.gpg] https://repo.jellyfin.org/debian {{ ansible_distribution_release }} main"
+    state: present
+    filename: jellyfin
+
+- name: Install Jellyfin
+  apt:
+    name: jellyfin
+    state: present
+    update_cache: true
+
+- name: Enable and start Jellyfin
+  systemd:
+    name: jellyfin
+    enabled: true
+    state: started
+
+# Config/library db lives at /var/lib/jellyfin — bind-mounted from host
+# (/mnt/ssd2tb/configs/jellyfin). Media is read-write mounted at /data
+# (matches the other media-app containers, same /mnt/ssd2tb filesystem).
+
+# --- QuickSync (VAAPI) hardware transcoding ---
+# Requires /dev/dri/renderD128 + /dev/dri/card0 passed through by
+# roles/proxmox_lxc (lxc_devices, set in 1_provision_containers.yml).
+- name: Install Intel VAAPI driver (iHD, Gen8+/Iris Xe)
+  apt:
+    name: [intel-media-va-driver, vainfo, python3-lxml]
+    state: present
+
+# /etc/jellyfin/encoding.xml is rootfs-only (not bind-mounted), so it's
+# regenerated fresh by Jellyfin on first start of a new container — wait
+# for it to exist before editing.
+- name: Wait for Jellyfin to generate encoding.xml
+  wait_for:
+    path: /etc/jellyfin/encoding.xml
+    timeout: 60
+
+- name: Enable VAAPI hardware transcoding in encoding.xml
+  community.general.xml:
+    path: /etc/jellyfin/encoding.xml
+    xpath: "/EncodingOptions/{{ item.tag }}"
+    value: "{{ item.value }}"
+  loop:
+    - { tag: HardwareAccelerationType, value: "vaapi" }
+    - { tag: AllowHevcEncoding, value: "true" }
+  register: encoding_xml
+
+- name: Add hevc to hardware decoding codecs
+  community.general.xml:
+    path: /etc/jellyfin/encoding.xml
+    xpath: /EncodingOptions/HardwareDecodingCodecs
+    set_children:
+      - string: h264
+      - string: hevc
+      - string: vc1
+  register: encoding_codecs
+
+- name: Restart Jellyfin if hwaccel config changed
+  systemd:
+    name: jellyfin
+    state: restarted
+  when: encoding_xml.changed or encoding_codecs.changed

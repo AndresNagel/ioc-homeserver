@@ -1,0 +1,66 @@
+---
+# roles/arr/tasks/main.yml
+# Generic role for Sonarr/Radarr/Prowlarr — installs the self-contained .NET
+# binary from servarr.com (matches the hand-built containers), not a Debian
+# package. arr_app is the lowercase service name (prowlarr/sonarr/radarr);
+# capitalizing it gives the binary/install dir name (Prowlarr/Sonarr/Radarr).
+#
+# Config/database lives at /var/lib/{{ arr_app }}, bind-mounted from the host
+# (mp0) — on a rebuild the existing config/API key/database is picked up as-is.
+
+- name: Install dependencies
+  apt:
+    name: [curl, sqlite3, mediainfo]
+    state: present
+    update_cache: true
+
+- name: Download {{ arr_app | capitalize }}
+  get_url:
+    url: "{{ arr_download_url }}"
+    dest: "/tmp/{{ arr_app }}.tar.gz"
+    mode: '0644'
+    force: true
+
+- name: Extract {{ arr_app | capitalize }} to /opt
+  unarchive:
+    src: "/tmp/{{ arr_app }}.tar.gz"
+    dest: /opt
+    remote_src: true
+  notify: Restart arr service
+
+- name: Ensure data directory exists
+  file:
+    path: "/var/lib/{{ arr_app }}"
+    state: directory
+    mode: '0755'
+
+- name: Install systemd service
+  copy:
+    dest: "/etc/systemd/system/{{ arr_app }}.service"
+    content: |
+      [Unit]
+      Description={{ arr_app | capitalize }} Daemon
+      After=network.target
+
+      [Service]
+      User=root
+      Group=root
+      Type=simple
+      ExecStart=/opt/{{ arr_app | capitalize }}/{{ arr_app | capitalize }} -nobrowser -data=/var/lib/{{ arr_app }}
+      TimeoutStopSec=20
+      KillMode=process
+      Restart=on-failure
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart arr service
+
+- name: Enable and start {{ arr_app }}
+  systemd:
+    name: "{{ arr_app }}"
+    enabled: true
+    state: started
+    daemon_reload: true

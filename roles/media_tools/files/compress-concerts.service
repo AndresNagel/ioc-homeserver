@@ -1,0 +1,9 @@
+[Unit]
+Description=Compress chaptered concert MKVs to HEVC for WiFi streaming
+After=remux-concerts.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/compress_concerts.sh
+Nice=19
+IOSchedulingClass=idle

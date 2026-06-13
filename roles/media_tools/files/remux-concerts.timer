@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily remux of new BDMV concert rips into chaptered MKV
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

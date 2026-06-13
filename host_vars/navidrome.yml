@@ -1,0 +1,12 @@
+---
+# host_vars/navidrome.yml
+# Real music library lives on the shared /mnt/ssd2tb mount (-> /data),
+# not the originally-planned {{ media_music }} path.
+navidrome_music_path:    "/data/media/music"
+navidrome_port: 4533
+
+navidrome_lastfm_enabled: false
+navidrome_lastfm_apikey: ""
+navidrome_lastfm_secret: ""
+navidrome_spotify_id: ""
+navidrome_spotify_secret: ""

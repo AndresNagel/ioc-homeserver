@@ -1,0 +1,56 @@
+---
+# roles/media_tools/tasks/main.yml
+# Media maintenance tooling on the Proxmox host (runs against /mnt/ssd2tb
+# directly — no LXC needed). Currently: BDMV concert -> chaptered MKV remux,
+# and a follow-up HEVC compression pass for WiFi-friendly streaming.
+
+- name: Install mkvtoolnix, ffmpeg and Intel VAAPI driver (for QuickSync)
+  apt:
+    name: [mkvtoolnix, ffmpeg, intel-media-va-driver, vainfo]
+    state: present
+
+- name: Deploy remux_concerts.sh
+  copy:
+    src: remux_concerts.sh
+    dest: /usr/local/bin/remux_concerts.sh
+    mode: '0755'
+
+- name: Deploy remux-concerts systemd service
+  copy:
+    src: remux-concerts.service
+    dest: /etc/systemd/system/remux-concerts.service
+
+- name: Deploy remux-concerts systemd timer
+  copy:
+    src: remux-concerts.timer
+    dest: /etc/systemd/system/remux-concerts.timer
+
+- name: Enable and start remux-concerts timer
+  systemd:
+    name: remux-concerts.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Deploy compress_concerts.sh
+  copy:
+    src: compress_concerts.sh
+    dest: /usr/local/bin/compress_concerts.sh
+    mode: '0755'
+
+- name: Deploy compress-concerts systemd service
+  copy:
+    src: compress-concerts.service
+    dest: /etc/systemd/system/compress-concerts.service
+
+- name: Deploy compress-concerts systemd timer
+  copy:
+    src: compress-concerts.timer
+    dest: /etc/systemd/system/compress-concerts.timer
+
+- name: Enable and start compress-concerts timer
+  systemd:
+    name: compress-concerts.timer
+    enabled: true
+    state: started
+    daemon_reload: true

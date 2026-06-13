@@ -1,0 +1,9 @@
+---
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: Restart forgejo
+  systemd:
+    name: forgejo
+    state: restarted

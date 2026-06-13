@@ -1,0 +1,44 @@
+; Managed by Ansible
+
+APP_NAME = Homelab Git
+RUN_USER = forgejo
+RUN_MODE = prod
+WORK_PATH = /var/lib/forgejo
+
+[server]
+DOMAIN           = forgejo.internal
+HTTP_PORT        = {{ forgejo_port | default(3001) }}
+ROOT_URL         = http://forgejo.internal:{{ forgejo_port | default(3001) }}/
+DISABLE_SSH      = false
+SSH_PORT         = 22
+LFS_START_SERVER = true
+LFS_CONTENT_PATH = /var/lib/forgejo/data/lfs
+
+[database]
+DB_TYPE  = sqlite3
+PATH     = /var/lib/forgejo/data/forgejo.db
+
+[repository]
+ROOT = /var/lib/forgejo/data/repositories
+
+[log]
+ROOT_PATH = /var/log/forgejo
+MODE      = file
+LEVEL     = info
+
+[security]
+INSTALL_LOCK        = true
+SECRET_KEY          = {{ forgejo_secret_key }}
+INTERNAL_TOKEN      = {{ forgejo_internal_token }}
+
+[service]
+DISABLE_REGISTRATION              = true   # only admin can create users
+REQUIRE_SIGNIN_VIEW               = true
+REGISTER_EMAIL_CONFIRM            = false
+ENABLE_NOTIFY_MAIL                = false
+ALLOW_ONLY_EXTERNAL_REGISTRATION  = false
+
+[mirror]
+ENABLED          = true
+DEFAULT_INTERVAL = 8h
+MIN_INTERVAL     = 10m

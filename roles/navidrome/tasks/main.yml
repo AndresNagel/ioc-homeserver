@@ -1,0 +1,71 @@
+---
+# roles/navidrome/tasks/main.yml
+# Installs Navidrome as a systemd service running as root (matches the
+# hand-built container, and both bind mounts are world-writable 777 on the
+# host so no dedicated user is needed). Config/DB live on the bind-mounted
+# /var/lib/navidrome -> survives rebuilds; navidrome.toml is only templated
+# if it doesn't already exist (force: no), so a real config with Last.fm
+# credentials is never overwritten.
+
+- name: Install dependencies
+  apt:
+    name: [curl, ffmpeg]
+    state: present
+    update_cache: true
+
+- name: Create navidrome dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /var/lib/navidrome
+    - /opt/navidrome
+
+- name: Get latest Navidrome version
+  uri:
+    url: https://api.github.com/repos/navidrome/navidrome/releases/latest
+    return_content: true
+  register: navidrome_release
+
+- name: Set navidrome version fact
+  set_fact:
+    navidrome_version: "{{ navidrome_release.json.tag_name | regex_replace('^v', '') }}"
+
+- name: Download Navidrome binary
+  get_url:
+    url: "https://github.com/navidrome/navidrome/releases/download/v{{ navidrome_version }}/navidrome_{{ navidrome_version }}_linux_amd64.tar.gz"
+    dest: /tmp/navidrome.tar.gz
+    mode: '0644'
+    force: true
+
+- name: Extract Navidrome binary
+  unarchive:
+    src: /tmp/navidrome.tar.gz
+    dest: /opt/navidrome
+    remote_src: true
+  notify: Restart navidrome
+
+- name: Template Navidrome config (only if missing)
+  template:
+    src: navidrome.toml.j2
+    dest: /var/lib/navidrome/navidrome.toml
+    mode: '0644'
+    force: false
+  notify: Restart navidrome
+
+- name: Install systemd service
+  template:
+    src: navidrome.service.j2
+    dest: /etc/systemd/system/navidrome.service
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart navidrome
+
+- name: Enable and start Navidrome
+  systemd:
+    name: navidrome
+    enabled: true
+    state: started
+    daemon_reload: true

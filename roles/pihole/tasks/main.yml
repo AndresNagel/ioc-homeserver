@@ -1,0 +1,68 @@
+---
+# roles/pihole/tasks/main.yml
+# Pi-hole v6: config lives in pihole.toml + gravity.db, not the old
+# setupVars.conf/adlists.list/custom.list flat files.
+
+- name: Install dependencies
+  apt:
+    name: [curl, git, sqlite3]
+    state: present
+    update_cache: true
+
+- name: Create pihole config dir
+  file:
+    path: /etc/pihole
+    state: directory
+    mode: '0755'
+
+- name: Template pihole setup vars (read by unattended installer)
+  template:
+    src: setupVars.conf.j2
+    dest: /etc/pihole/setupVars.conf
+    mode: '0644'
+
+# --- Run installer (idempotent: skips if already installed) ---
+- name: Check if pihole is already installed
+  stat:
+    path: /usr/local/bin/pihole
+  register: pihole_bin
+
+- name: Install pihole
+  shell: |
+    curl -sSL https://install.pi-hole.net | bash /dev/stdin --unattended
+  when: not pihole_bin.stat.exists
+
+# --- Admin password ---
+- name: Set pihole web password
+  command: pihole setpassword "{{ pihole_web_password }}"
+  no_log: true
+  changed_when: false
+
+# --- Upstream DNS ---
+- name: Set upstream DNS servers
+  ansible.builtin.command:
+    argv: [pihole-FTL, --config, dns.upstreams, '["1.1.1.1","8.8.8.8"]']
+  changed_when: false
+
+# --- Custom local DNS records ---
+- name: Set custom local DNS records
+  ansible.builtin.command:
+    argv:
+      - pihole-FTL
+      - --config
+      - dns.hosts
+      - "{{ (pihole_custom_dns | map(attribute='ip') | list | zip(pihole_custom_dns | map(attribute='name') | list)) | map('join', ' ') | list | to_json }}"
+  changed_when: false
+
+# --- Adlists ---
+- name: Template adlist SQL
+  template:
+    src: adlists.sql.j2
+    dest: /etc/pihole/ansible_adlists.sql
+    mode: '0644'
+  register: adlist_sql
+
+- name: Apply adlists to gravity database
+  command: sqlite3 /etc/pihole/gravity.db -init /etc/pihole/ansible_adlists.sql ".quit"
+  when: adlist_sql.changed
+  notify: Update gravity

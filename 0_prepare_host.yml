@@ -1,0 +1,19 @@
+---
+# 0_prepare_host.yml
+# Prepares the Proxmox host: creates all media/appdata directories,
+# and optionally mounts a NAS. Run this FIRST, and any time you change
+# storage (e.g. adding a NAS later).
+#
+# Usage:
+#   ansible-playbook -i inventory.yml 0_prepare_host.yml --ask-vault-pass
+#
+# To switch to NAS later:
+#   1. Edit group_vars/all.yml: set nfs_enabled: true, nfs_server, nfs_export
+#   2. Re-run this playbook only — zero changes to containers needed
+
+- name: Prepare Proxmox host storage
+  hosts: pve
+  roles:
+    - proxmox_host
+    - media_tools
+    - homarr

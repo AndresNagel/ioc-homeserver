@@ -1,0 +1,5 @@
+-- Managed by Ansible - do not edit manually
+-- Add/remove lists in host_vars/pihole.yml -> pihole_adlists
+{% for list in pihole_adlists %}
+INSERT OR IGNORE INTO adlist (address, enabled) VALUES ('{{ list }}', 1);
+{% endfor %}

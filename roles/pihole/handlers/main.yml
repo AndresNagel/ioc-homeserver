@@ -1,0 +1,6 @@
+---
+# roles/pihole/handlers/main.yml
+
+- name: Update gravity
+  command: pihole -g
+  listen: Update gravity

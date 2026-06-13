@@ -1,0 +1,124 @@
+---
+# roles/semaphore/tasks/main.yml
+# Installs Ansible Semaphore as a systemd service.
+# Semaphore will be configured to point at your playbooks repo
+# (either a local path or a git remote).
+
+- name: Install dependencies
+  apt:
+    name: [git, ansible, curl, python3-pip, sudo]
+    state: present
+    update_cache: true
+
+- name: Install community.general Ansible collection
+  command: ansible-galaxy collection install community.general
+  become: false
+  changed_when: false
+
+- name: Create semaphore system user
+  user:
+    name: semaphore
+    shell: /usr/sbin/nologin
+    home: /var/lib/semaphore
+    create_home: true
+    system: true
+
+- name: Create semaphore dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: semaphore
+    group: semaphore
+    mode: '0750'
+  loop:
+    - /var/lib/semaphore
+    - /etc/semaphore
+
+- name: Get latest Semaphore release info
+  uri:
+    url: https://api.github.com/repos/semaphoreui/semaphore/releases/latest
+    return_content: true
+  register: semaphore_release
+
+- name: Set semaphore version fact
+  set_fact:
+    semaphore_version: "{{ semaphore_release.json.tag_name | regex_replace('^v', '') }}"
+
+- name: Download Semaphore binary
+  get_url:
+    url: "https://github.com/semaphoreui/semaphore/releases/download/v{{ semaphore_version }}/semaphore_community_{{ semaphore_version }}_linux_amd64.tar.gz"
+    dest: /tmp/semaphore.tar.gz
+    mode: '0644'
+    force: true
+
+- name: Extract Semaphore binary
+  unarchive:
+    src: /tmp/semaphore.tar.gz
+    dest: /usr/local/bin
+    remote_src: true
+    include: [semaphore]
+  notify: Restart semaphore
+
+- name: Set semaphore binary permissions
+  file:
+    path: /usr/local/bin/semaphore
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Template Semaphore config
+  template:
+    src: semaphore_config.json.j2
+    dest: /etc/semaphore/config.json
+    owner: semaphore
+    group: semaphore
+    mode: '0640'
+  notify: Restart semaphore
+
+- name: Run Semaphore DB migration (idempotent)
+  command: semaphore migrate --config /etc/semaphore/config.json
+  become: true
+  become_user: semaphore
+  changed_when: false
+
+- name: Check if Semaphore admin user already created
+  stat:
+    path: /var/lib/semaphore/.admin_created
+  register: semaphore_admin_marker
+
+- name: Create Semaphore admin user
+  command: >
+    semaphore user add --admin
+    --login {{ semaphore_admin_user }}
+    --name {{ semaphore_admin_user }}
+    --email {{ semaphore_admin_email }}
+    --password {{ semaphore_admin_password }}
+    --config /etc/semaphore/config.json
+  become: true
+  become_user: semaphore
+  no_log: true
+  when: not semaphore_admin_marker.stat.exists
+
+- name: Mark Semaphore admin user as created
+  file:
+    path: /var/lib/semaphore/.admin_created
+    state: touch
+    owner: semaphore
+    group: semaphore
+    mode: '0600'
+  when: not semaphore_admin_marker.stat.exists
+
+- name: Install systemd service
+  template:
+    src: semaphore.service.j2
+    dest: /etc/systemd/system/semaphore.service
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart semaphore
+
+- name: Enable and start Semaphore
+  systemd:
+    name: semaphore
+    enabled: true
+    state: started

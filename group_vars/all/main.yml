@@ -1,0 +1,50 @@
+---
+# --- Proxmox ---
+proxmox_host: 192.168.1.253           # your Proxmox node IP
+proxmox_node: proxmox                 # your Proxmox node name (check PVE UI top-right)
+proxmox_storage: local-lvm            # storage for container rootfs
+proxmox_bridge: vmbr0
+proxmox_gateway: 192.168.1.254
+proxmox_dns: 192.168.1.254            # router; avoids bootstrap chicken-and-egg when (re)creating pihole itself
+proxmox_template: local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst
+
+# --- Proxmox API auth ---
+# Must be root@pam: Proxmox hardcodes "Only root can pass arbitrary filesystem
+# paths" for LXC bind mounts (mp0/mp1/...), so the least-privilege ansible@pve
+# token cannot create containers with bind-mounted appdata/media directories.
+proxmox_api_user: root@pam
+proxmox_api_token_id: automation
+# proxmox_api_token_secret comes from vault.yml
+
+# --- SSH keys to authorize for root on every LXC (matches existing containers) ---
+proxmox_ssh_authorized_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFAMs3638qDEv2aV+iqpfSzOHKris8Njf+XwHZYqkj07 shishkaberry@kiwi"
+  - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDi4Yb+vHPdnusKUARuE/tiwIltE5/iK6cjPi/jGbWx+bzUffqtcTogK9gLxItH/f4s+8EWJ46VsyK0q6gZetp85E5sJypsTP2U2CJyHy9lZ/6o2c8YWe476fiBgpC07sPPfdYa5+Q97vUHEZghHpiZr1m4TCAd6J9soIddB6yxugTPsxyce7YOIwF17jhHhcyexDoQC0Qw3RQfpBKO5n7i1wCyjoIWg4QY6d6xxP+QpPUDlgTqgdgI6eQRXxB0VCGoFRpWHD3yqgMoVqMSlEyhmNnmxYi5iVuzx+3Hdk5eRofwltKqlx+54tl6LJkPyN8zRwUAtZhJ4OnH7x+aQRVKpoyRncrkRK+Z9DbXwBJP+UohWpJKP75MziYaZWF33hNm405pMmtJI+BzV/LmHq2h93h2qJ+10W5dcbDtDoTl/hUTpCTJRG6rrNwtmpQ+eGz/Dyw1s+yjUgoiKFNmktGcxtQ+zWUvg3mEz78CFa7EPonr0QaQVUZrKbTOp7gnjNMszInO6bV68STNlQJdoSauCD+KrEEr4HBCLi8KcIehTa+6f14xe++sfrRowyCXRF3Talxl9LzbB23WMfdreBy/At58KrvSngLdOJHZMMbxhSSPXj5/B1sHQPC2FcdZNKmmbLNfPsH8HIRg0XfJFmin7PJ21a+WGa38uJDrE86ppw== root@proxmox"
+
+# --- Timezone ---
+timezone: Europe/Madrid               # change to your TZ
+
+# --- App config data (survives container rebuilds) ---
+appdata_base: /opt/appdata
+
+# --- Media root (single mount point — never changes even when NAS is added) ---
+# Everything lives under here. LXCs always see /mnt/media inside.
+# Today: local SSD. Future: swap for NFS mount at the same path, zero LXC changes.
+media_root: /mnt/media
+
+# Subpaths — consistent inside every LXC that needs them
+media_movies:           "{{ media_root }}/movies"
+media_tv:               "{{ media_root }}/tv"
+media_music:            "{{ media_root }}/music"
+media_books:            "{{ media_root }}/books"
+media_downloads:        "{{ media_root }}/downloads"
+media_downloads_done:   "{{ media_root }}/downloads/complete"
+media_downloads_inc:    "{{ media_root }}/downloads/incomplete"
+
+# --- NFS (future NAS) ---
+# Set nfs_enabled: true and fill these when you add a NAS.
+# Run: ansible-playbook -i inventory.yml 0_prepare_host.yml
+# All LXCs will transparently see the NAS — no other changes needed.
+nfs_enabled: false
+nfs_server: ""          # e.g. 192.168.1.50 or nas.local
+nfs_export: ""          # e.g. /volume1/media

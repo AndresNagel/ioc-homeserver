@@ -1,0 +1,150 @@
+---
+# 1_provision_containers.yml
+# Creates all LXC containers on Proxmox with bind mounts.
+# Re-running is safe (state: present is idempotent).
+# Run 0_prepare_host.yml first.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml 1_provision_containers.yml --ask-vault-pass
+#
+# Single container:
+#   ansible-playbook -i inventory.yml 1_provision_containers.yml --limit sonarr --ask-vault-pass
+
+# --- PiHole ---
+- name: Provision PiHole LXC
+  hosts: pihole
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_mounts:
+          mp0: "{{ appdata_base }}/pihole,mp=/etc/pihole"
+
+# --- Transmission ---
+# Mirrors the hand-built container: full /mnt/ssd2tb mounted at /data (so
+# hardlinks to media work), config/state persists at
+# /mnt/ssd2tb/configs/transmission -> /var/lib/transmission-daemon
+- name: Provision Transmission LXC
+  hosts: transmission
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb,mp=/data"
+          mp1: "/mnt/ssd2tb/configs/transmission,mp=/var/lib/transmission-daemon"
+
+# --- Sonarr ---
+# Full /mnt/ssd2tb mounted at /data so hardlinks work between
+# torrents/tv and series/ (same filesystem)
+- name: Provision Sonarr LXC
+  hosts: sonarr
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_disk: 4
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb,mp=/data"
+          mp1: "/mnt/ssd2tb/configs/sonarr,mp=/var/lib/sonarr"
+
+# --- Radarr ---
+# Full /mnt/ssd2tb mounted at /data so hardlinks work between
+# torrents/movies and movies/ (same filesystem)
+- name: Provision Radarr LXC
+  hosts: radarr
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_disk: 4
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb,mp=/data"
+          mp1: "/mnt/ssd2tb/configs/radarr,mp=/var/lib/radarr"
+
+# --- Lidarr ---
+# Full /mnt/ssd2tb mounted at /data so hardlinks work between
+# torrents/music and media/music (same filesystem)
+- name: Provision Lidarr LXC
+  hosts: lidarr
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_disk: 4
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb,mp=/data"
+          mp1: "/mnt/ssd2tb/configs/lidarr,mp=/var/lib/lidarr"
+
+# --- Prowlarr ---
+- name: Provision Prowlarr LXC
+  hosts: prowlarr
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_disk: 4
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb/configs/prowlarr,mp=/var/lib/prowlarr"
+
+# --- Jellyfin ---
+# Full /mnt/ssd2tb mounted at /data (matches the other media-app containers);
+# config/library db persists at /mnt/ssd2tb/configs/jellyfin -> /var/lib/jellyfin
+- name: Provision Jellyfin LXC
+  hosts: jellyfin
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_disk: 8
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb,mp=/data"
+          mp1: "/mnt/ssd2tb/configs/jellyfin,mp=/var/lib/jellyfin"
+        # Intel QuickSync (i5-1235U/Iris Xe) passthrough for hwaccel
+        # transcoding. gid values match the jellyfin user's render/video
+        # groups inside the container (104/44 — same gids as the host).
+        lxc_devices:
+          dev0: "/dev/dri/renderD128,gid=104"
+          dev1: "/dev/dri/card0,gid=44"
+
+# --- Navidrome ---
+- name: Provision Navidrome LXC
+  hosts: navidrome
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_disk: 4
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb,mp=/data"
+          mp1: "/mnt/ssd2tb/configs/navidrome,mp=/var/lib/navidrome"
+
+# --- Semaphore ---
+- name: Provision Semaphore LXC
+  hosts: semaphore
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_mounts:
+          mp0: "{{ appdata_base }}/semaphore,mp=/var/lib/semaphore"
+
+# --- Forgejo ---
+- name: Provision Forgejo LXC
+  hosts: forgejo
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_memory: 512
+        lxc_disk: 10
+        lxc_mounts:
+          mp0: "{{ appdata_base }}/forgejo,mp=/var/lib/forgejo"
+
+# --- FlareSolverr ---
+# Stateless Cloudflare-bypass proxy used by Prowlarr — no bind mounts.
+- name: Provision FlareSolverr LXC
+  hosts: flaresolverr
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc

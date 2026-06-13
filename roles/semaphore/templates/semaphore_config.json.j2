@@ -1,0 +1,21 @@
+{
+  "dialect": "bolt",
+  "bolt": {
+    "host": "/var/lib/semaphore/semaphore.db"
+  },
+  "tmp_path": "/tmp/semaphore",
+  "cookie_hash": "{{ semaphore_cookie_hash }}",
+  "cookie_encryption": "{{ semaphore_cookie_encryption }}",
+  "access_key_encryption": "{{ semaphore_access_key_encryption }}",
+  "interface": "",
+  "port": ":{{ semaphore_port | default(3000) }}",
+  "ssh_config_path": "~/.ssh/config",
+  "git_client": "cmd_git",
+  "web_host": "",
+  "demo_mode": false,
+  "password_login_disable": false,
+  "non_admin_can_create_project": false,
+  "use_remote_runner": false,
+  "totp_enabled": false,
+  "email_alert": false
+}

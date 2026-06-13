@@ -1,0 +1,11 @@
+---
+# roles/flaresolverr/handlers/main.yml
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: Restart flaresolverr
+  systemd:
+    name: flaresolverr
+    state: restarted

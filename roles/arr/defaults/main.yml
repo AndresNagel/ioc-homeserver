@@ -1,0 +1,8 @@
+---
+# roles/arr/defaults/main.yml
+# Download URL for the {{ arr_app | capitalize }} release tarball.
+# Prowlarr (and likely Radarr) are served via the legacy servarr.com
+# "update" endpoint, which 301-redirects straight to the GitHub release
+# asset. Sonarr has moved to a different endpoint/host (services.sonarr.tv)
+# - overridden per-app in 2_configure_services.yml where needed.
+arr_download_url: "https://{{ arr_app }}.servarr.com/v1/update/master/updatefile?os=linux&runtime=netcore&arch=x64"

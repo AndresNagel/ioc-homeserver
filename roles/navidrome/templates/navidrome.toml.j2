@@ -1,0 +1,22 @@
+# Managed by Ansible
+
+MusicFolder = "{{ navidrome_music_path }}"
+DataFolder   = "/var/lib/navidrome"
+LogLevel     = "info"
+Port         = {{ navidrome_port | default(4533) }}
+
+# Transcoding — ffmpeg is installed, this enables it
+TranscodingCacheSize = "100MB"
+
+# Scanner — how often to re-scan your music folder
+ScanSchedule        = "@every 1h"
+WatcherPollingInterval = 0    # set >0 (seconds) if inotify doesn't work in LXC
+
+# Last.fm scrobbling (optional — leave blank to disable)
+LastFM.Enabled    = {{ navidrome_lastfm_enabled | default('false') }}
+LastFM.ApiKey     = "{{ navidrome_lastfm_apikey | default('') }}"
+LastFM.Secret     = "{{ navidrome_lastfm_secret | default('') }}"
+
+# Spotify (album art, optional)
+Spotify.ID        = "{{ navidrome_spotify_id | default('') }}"
+Spotify.Secret    = "{{ navidrome_spotify_secret | default('') }}"

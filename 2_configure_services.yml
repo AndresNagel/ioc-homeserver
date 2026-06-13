@@ -1,0 +1,75 @@
+---
+# 2_configure_services.yml
+# Run after containers are up. Installs and configures all services.
+# Safe to re-run — all tasks are idempotent.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml 2_configure_services.yml --ask-vault-pass
+#
+# Run a single host only:
+#   ansible-playbook -i inventory.yml 2_configure_services.yml --limit pihole
+
+- name: Configure PiHole
+  hosts: pihole
+  roles:
+    - pihole
+
+- name: Configure Transmission
+  hosts: transmission
+  roles:
+    - transmission
+
+- name: Configure Sonarr
+  hosts: sonarr
+  roles:
+    - arr
+  vars:
+    arr_app: sonarr
+    # Sonarr v4 is served from services.sonarr.tv, not servarr.com/v1/update
+    arr_download_url: "https://services.sonarr.tv/v1/download/main/latest?version=4&os=linux&arch=x64"
+
+- name: Configure Radarr
+  hosts: radarr
+  roles:
+    - arr
+  vars:
+    arr_app: radarr
+
+- name: Configure Lidarr
+  hosts: lidarr
+  roles:
+    - arr
+  vars:
+    arr_app: lidarr
+
+- name: Configure Prowlarr
+  hosts: prowlarr
+  roles:
+    - arr
+  vars:
+    arr_app: prowlarr
+
+- name: Configure Jellyfin
+  hosts: jellyfin
+  roles:
+    - jellyfin
+
+- name: Configure Navidrome
+  hosts: navidrome
+  roles:
+    - navidrome
+
+- name: Configure Semaphore
+  hosts: semaphore
+  roles:
+    - semaphore
+
+- name: Configure Forgejo
+  hosts: forgejo
+  roles:
+    - forgejo
+
+- name: Configure FlareSolverr
+  hosts: flaresolverr
+  roles:
+    - flaresolverr

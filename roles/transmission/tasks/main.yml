@@ -1,0 +1,60 @@
+---
+# roles/transmission/tasks/main.yml
+# Installs transmission-daemon, matching the hand-built container.
+# All state (settings.json, blocklists, resume files) lives on the host at
+# /mnt/ssd2tb/configs/transmission, bind-mounted to /var/lib/transmission-daemon
+# (mp1) — it persists across container rebuilds, so nothing is templated here.
+
+# The bind-mounted state dir is owned 100102:100105 on the host (debian-transmission's
+# uid/gid shifted by the unprivileged container's +100000 offset). Pin these ids
+# before installing the package so its postinst doesn't claim a different uid/gid
+# (which would happen on a fresh container, since uid 100/101 aren't taken by
+# dhcpcd/postfix here like they were on the hand-built one).
+- name: Pin debian-transmission group (gid 105, matches existing data ownership)
+  group:
+    name: debian-transmission
+    gid: 105
+    system: true
+
+- name: Pin debian-transmission user (uid 102, matches existing data ownership)
+  user:
+    name: debian-transmission
+    uid: 102
+    group: debian-transmission
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+    home: /var/lib/transmission-daemon
+
+- name: Install transmission-daemon
+  apt:
+    name: transmission-daemon
+    state: present
+    update_cache: true
+
+- name: Ensure systemd override directory exists
+  file:
+    path: /etc/systemd/system/transmission-daemon.service.d
+    state: directory
+    mode: '0755'
+
+# Matches the hand-built container's drop-in: points at the bind-mounted
+# config dir and allows RPC access from the LAN.
+- name: Install systemd override for transmission-daemon
+  copy:
+    dest: /etc/systemd/system/transmission-daemon.service.d/override.conf
+    content: |
+      [Service]
+      ExecStart=
+      ExecStart=/usr/bin/transmission-daemon -f --config-dir /var/lib/transmission-daemon/info --allowed *.*.*.*
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart transmission-daemon
+
+- name: Enable and start transmission-daemon
+  systemd:
+    name: transmission-daemon
+    enabled: true
+    state: started
+    daemon_reload: true

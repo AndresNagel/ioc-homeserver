@@ -1,0 +1,823 @@
+{
+    "schemaVersion": 2,
+    "configProperties": {
+        "name": "default"
+    },
+    "categories": [],
+    "wrappers": [
+        {
+            "id": "default",
+            "position": 0
+        }
+    ],
+    "apps": [
+        {
+            "id": "f0c78a61-50cf-44ec-9294-a4819c107a6a",
+            "name": "Lidarr",
+            "url": "http://192.168.1.101:8686",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/lidarr.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.101:8686/"
+            },
+            "area": {
+                "type": "wrapper",
+                "properties": {
+                    "id": "default"
+                }
+            },
+            "shape": {
+                "md": {
+                    "location": {
+                        "x": 1,
+                        "y": 1
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "lg": {
+                    "location": {
+                        "x": 0,
+                        "y": 1
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "ab1ac9fd-66e5-4041-ab21-5559a71841ff",
+            "name": "Prowlarr",
+            "url": "http://192.168.1.110:9696",
+            "appearance": {
+                "iconUrl": "/imgs/logo/logo.png",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.110:9696/"
+            },
+            "area": {
+                "type": "wrapper",
+                "properties": {
+                    "id": "default"
+                }
+            },
+            "shape": {
+                "md": {
+                    "location": {
+                        "x": 0,
+                        "y": 1
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "lg": {
+                    "location": {
+                        "x": 0,
+                        "y": 1
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "018dd40d-bc78-4093-bfa0-12009634dd3e",
+            "name": "Proxmox",
+            "url": "https://192.168.1.253:8006",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/proxmox-light.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "https://192.168.1.253:8006"
+            },
+            "area": {
+                "type": "sidebar",
+                "properties": {
+                    "location": "left"
+                }
+            },
+            "shape": {
+                "lg": {
+                    "location": {
+                        "x": 1,
+                        "y": 2
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "md": {
+                    "location": {
+                        "x": 0,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 2,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "ae2cb09c-16f0-4ab6-abf3-ed35ed0b4bc4",
+            "name": "Navidrome",
+            "url": "http://192.168.1.106:4533",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/navidrome-light.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.106:4533"
+            },
+            "area": {
+                "type": "wrapper",
+                "properties": {
+                    "id": "default"
+                }
+            },
+            "shape": {
+                "lg": {
+                    "location": {
+                        "x": 0,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "md": {
+                    "location": {
+                        "x": 0,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "6e98a2ae-a628-4425-bf13-a44fb2af3214",
+            "name": "Pi-hole",
+            "url": "http://192.168.1.100/admin",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/pi-hole.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.100/admin"
+            },
+            "area": {
+                "type": "sidebar",
+                "properties": {
+                    "location": "left"
+                }
+            },
+            "shape": {
+                "lg": {
+                    "location": {
+                        "x": 1,
+                        "y": 1
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "md": {
+                    "location": {
+                        "x": 1,
+                        "y": 1
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "417d3851-c16d-41b4-99fc-62e28b8cc27b",
+            "name": "Sonarr",
+            "url": "http://192.168.1.104:8989",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/sonarr-4k.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.104:8989/"
+            },
+            "area": {
+                "type": "wrapper",
+                "properties": {
+                    "id": "default"
+                }
+            },
+            "shape": {
+                "lg": {
+                    "location": {
+                        "x": 1,
+                        "y": 1
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "md": {
+                    "location": {
+                        "x": 2,
+                        "y": 1
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "e910287d-0dc6-499f-8425-c3eae054da6e",
+            "name": "Portainer",
+            "url": "http://192.168.1.253:9000",
+            "appearance": {
+                "iconUrl": "/imgs/logo/logo.png",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.253:9000"
+            },
+            "area": {
+                "type": "sidebar",
+                "properties": {
+                    "location": "left"
+                }
+            },
+            "shape": {
+                "lg": {
+                    "location": {
+                        "x": 1,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "md": {
+                    "location": {
+                        "x": 0,
+                        "y": 1
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "1ccd18ed-b331-4b6f-a38f-a7d265ec5d7f",
+            "name": "Transmission",
+            "url": "http://192.168.1.103:9091/transmission/web",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/transmission.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.103:9091/transmission/web/"
+            },
+            "area": {
+                "type": "wrapper",
+                "properties": {
+                    "id": "default"
+                }
+            },
+            "shape": {
+                "lg": {
+                    "location": {
+                        "x": 1,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "md": {
+                    "location": {
+                        "x": 1,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "0ecea564-928e-4355-991b-24112a5b12bc",
+            "name": "MusicBrainz Picard",
+            "url": "http://192.168.1.113:5800",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/musicbrainz.png",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.113:5800"
+            },
+            "area": {
+                "type": "sidebar",
+                "properties": {
+                    "location": "right"
+                }
+            },
+            "shape": {
+                "md": {
+                    "location": {
+                        "x": 0,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "lg": {
+                    "location": {
+                        "x": 1,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "38174316-bb6b-4252-888c-e459dbaebee5",
+            "name": "Flareresolver",
+            "url": "http://192.168.1.111:8191",
+            "appearance": {
+                "iconUrl": "/imgs/logo/logo.png",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.111:8191/"
+            },
+            "area": {
+                "type": "wrapper",
+                "properties": {
+                    "id": "default"
+                }
+            },
+            "shape": {
+                "md": {
+                    "location": {
+                        "x": 0,
+                        "y": 2
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "lg": {
+                    "location": {
+                        "x": 2,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "5e8bb073-4e8f-49a7-a506-ea5ae3c1d65d",
+            "name": "Jellyfin",
+            "url": "http://192.168.1.102:8096",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/jellyfin.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.102:8096"
+            },
+            "area": {
+                "type": "wrapper",
+                "properties": {
+                    "id": "default"
+                }
+            },
+            "shape": {
+                "md": {
+                    "location": {
+                        "x": 1,
+                        "y": 2
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "lg": {
+                    "location": {
+                        "x": 2,
+                        "y": 1
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "8829b7ab-0bea-4f23-a829-51c8f7d2719b",
+            "name": "Radarr",
+            "url": "http://192.168.1.105:7878",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/radarr.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.105:7878"
+            },
+            "area": {
+                "type": "wrapper",
+                "properties": {
+                    "id": "default"
+                }
+            },
+            "shape": {
+                "md": {
+                    "location": {
+                        "x": 2,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "lg": {
+                    "location": {
+                        "x": 3,
+                        "y": 0
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "db7d34c2-87e8-4fb9-8f15-20f97b6280de",
+            "name": "Semaphore",
+            "url": "http://192.168.1.27:3000",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/semaphore.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.27:3000"
+            },
+            "area": {
+                "type": "sidebar",
+                "properties": {
+                    "location": "left"
+                }
+            },
+            "shape": {
+                "md": {
+                    "location": {
+                        "x": 1,
+                        "y": 2
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "lg": {
+                    "location": {
+                        "x": 1,
+                        "y": 3
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        }
+    ],
+    "widgets": [],
+    "settings": {
+        "common": {
+            "searchEngine": {
+                "type": "google",
+                "properties": {}
+            }
+        },
+        "customization": {
+            "layout": {
+                "enabledLeftSidebar": true,
+                "enabledRightSidebar": true,
+                "enabledDocker": false,
+                "enabledPing": false,
+                "enabledSearchbar": true
+            },
+            "pageTitle": "Homarr \u2b50\ufe0f",
+            "logoImageUrl": "/imgs/logo/logo.png",
+            "faviconUrl": "/imgs/favicon/favicon-squared.png",
+            "backgroundImageUrl": "",
+            "customCss": "",
+            "colors": {
+                "primary": "red",
+                "secondary": "yellow",
+                "shade": 7
+            },
+            "appOpacity": 100,
+            "gridstack": {
+                "columnCountSmall": 3,
+                "columnCountMedium": 6,
+                "columnCountLarge": 10
+            },
+            "backgroundImageAttachment": "fixed",
+            "backgroundImageRepeat": "no-repeat",
+            "backgroundImageSize": "cover",
+            "metaTitle": ""
+        },
+        "access": {
+            "allowGuests": false
+        }
+    }
+}

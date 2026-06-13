@@ -1,0 +1,5 @@
+---
+# host_vars/transmission.yml
+# Matches the hand-built container: Debian 13 (trixie), required for the
+# transmission-daemon 4.1.x packages already in use.
+proxmox_template: local:vztmpl/debian-13-standard_13.1-2_amd64.tar.zst

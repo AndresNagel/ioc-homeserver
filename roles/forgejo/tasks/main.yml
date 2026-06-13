@@ -1,0 +1,168 @@
+---
+# roles/forgejo/tasks/main.yml
+# Installs Forgejo and configures the homelab repo with a GitLab push mirror.
+
+- name: Install dependencies
+  apt:
+    name: [git, curl, openssh-server, sudo]
+    state: present
+    update_cache: true
+
+- name: Create forgejo system user
+  user:
+    name: forgejo
+    shell: /bin/bash
+    home: /var/lib/forgejo
+    create_home: true
+    system: true
+
+- name: Create forgejo dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: forgejo
+    group: forgejo
+    mode: '0750'
+  loop:
+    - /var/lib/forgejo
+    - /var/lib/forgejo/custom
+    - /var/lib/forgejo/custom/conf
+    - /var/lib/forgejo/data
+    - /var/log/forgejo
+    - /etc/forgejo
+
+- name: Get latest Forgejo release
+  uri:
+    url: https://codeberg.org/api/v1/repos/forgejo/forgejo/releases?limit=1
+    return_content: true
+  register: forgejo_release
+
+- name: Set forgejo version fact
+  set_fact:
+    forgejo_version: "{{ forgejo_release.json[0].tag_name | regex_replace('^v', '') }}"
+
+- name: Download Forgejo binary
+  get_url:
+    url: "https://codeberg.org/forgejo/forgejo/releases/download/v{{ forgejo_version }}/forgejo-{{ forgejo_version }}-linux-amd64"
+    dest: /usr/local/bin/forgejo
+    mode: '0755'
+    owner: root
+    group: root
+
+# SECRET_KEY/INTERNAL_TOKEN must stay stable across runs (changing them
+# invalidates sessions and encrypted data), so generate them once and read
+# them back from the existing app.ini on subsequent runs.
+- name: Check for existing Forgejo config
+  stat:
+    path: /etc/forgejo/app.ini
+  register: forgejo_appini_stat
+
+- name: Read existing SECRET_KEY
+  shell: "grep '^SECRET_KEY' /etc/forgejo/app.ini | awk '{print $NF}'"
+  register: existing_secret_key
+  changed_when: false
+  when: forgejo_appini_stat.stat.exists
+
+- name: Read existing INTERNAL_TOKEN
+  shell: "grep '^INTERNAL_TOKEN' /etc/forgejo/app.ini | awk '{print $NF}'"
+  register: existing_internal_token
+  changed_when: false
+  when: forgejo_appini_stat.stat.exists
+
+- name: Generate SECRET_KEY
+  command: /usr/local/bin/forgejo generate secret SECRET_KEY
+  register: generated_secret_key
+  changed_when: false
+  when: not forgejo_appini_stat.stat.exists
+
+- name: Generate INTERNAL_TOKEN
+  command: /usr/local/bin/forgejo generate secret INTERNAL_TOKEN
+  register: generated_internal_token
+  changed_when: false
+  when: not forgejo_appini_stat.stat.exists
+
+- name: Set forgejo_secret_key/forgejo_internal_token facts
+  set_fact:
+    forgejo_secret_key: "{{ existing_secret_key.stdout if forgejo_appini_stat.stat.exists else generated_secret_key.stdout }}"
+    forgejo_internal_token: "{{ existing_internal_token.stdout if forgejo_appini_stat.stat.exists else generated_internal_token.stdout }}"
+
+- name: Template Forgejo app.ini config
+  template:
+    src: app.ini.j2
+    dest: /etc/forgejo/app.ini
+    owner: forgejo
+    group: forgejo
+    mode: '0640'
+  notify: Restart forgejo
+
+- name: Install systemd service
+  template:
+    src: forgejo.service.j2
+    dest: /etc/systemd/system/forgejo.service
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart forgejo
+
+- name: Enable and start Forgejo
+  systemd:
+    name: forgejo
+    enabled: true
+    state: started
+
+- name: Wait for Forgejo to be ready
+  wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ forgejo_port }}"
+    delay: 2
+    timeout: 75
+
+# --- Create admin user (idempotent via ignore_errors) ---
+- name: Create Forgejo admin user
+  command: >
+    forgejo admin user create
+    --username {{ forgejo_admin_user }}
+    --password {{ forgejo_admin_password }}
+    --email {{ forgejo_admin_email }}
+    --admin
+    --config /etc/forgejo/app.ini
+  become: true
+  become_user: forgejo
+  ignore_errors: true   # fails silently if user already exists
+  no_log: true
+
+# --- Create homelab repo via API ---
+- name: Create homelab-ansible repo in Forgejo
+  uri:
+    url: "http://{{ ansible_host }}:{{ forgejo_port }}/api/v1/user/repos"
+    method: POST
+    user: "{{ forgejo_admin_user }}"
+    password: "{{ forgejo_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      name: homelab-ansible
+      description: "Homelab IaC — Proxmox, Ansible playbooks"
+      private: true
+      auto_init: true
+      default_branch: main
+    status_code: [201, 409]   # 409 = already exists, that's fine
+
+# --- Configure GitLab push mirror (optional) ---
+- name: Set up GitLab push mirror for homelab-ansible
+  uri:
+    url: "http://{{ ansible_host }}:{{ forgejo_port }}/api/v1/repos/{{ forgejo_admin_user }}/homelab-ansible/push_mirrors"
+    method: POST
+    user: "{{ forgejo_admin_user }}"
+    password: "{{ forgejo_admin_password }}"
+    force_basic_auth: true
+    body_format: json
+    body:
+      remote_address: "{{ gitlab_mirror_url }}"
+      remote_username: "{{ gitlab_mirror_username }}"
+      remote_password: "{{ gitlab_mirror_token }}"
+      sync_on_commit: true
+      interval: "8h0m0s"
+    status_code: [200, 201, 409]
+  no_log: true
+  when: gitlab_mirror_url | default('') | length > 0

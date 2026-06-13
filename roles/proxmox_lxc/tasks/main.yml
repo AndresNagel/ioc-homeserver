@@ -1,0 +1,91 @@
+---
+# roles/proxmox_lxc/tasks/main.yml
+# Creates an LXC container on Proxmox with bind mounts.
+# Called per-host with the right vars set.
+
+- name: Create LXC container {{ inventory_hostname }}
+  community.proxmox.proxmox:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"   # set in vault
+    node: "{{ proxmox_node }}"
+    vmid: "{{ lxc_id }}"
+    hostname: "{{ inventory_hostname }}"
+    ostemplate: "{{ proxmox_template }}"
+    disk: "{{ proxmox_storage }}:{{ lxc_disk | default('8') }}"   # storage:size(GB) — newer PVE requires this syntax
+    memory: "{{ lxc_memory }}"
+    cores: "{{ lxc_cores }}"
+    netif:
+      net0: "name=eth0,bridge={{ proxmox_bridge }},ip={{ ansible_host }}/24,gw={{ proxmox_gateway }}"
+    nameserver: "{{ proxmox_dns }}"
+    searchdomain: local
+    onboot: true
+    unprivileged: true
+    features:
+      - nesting=1                                  # needed for Docker inside LXC
+    state: present
+  delegate_to: pve
+
+# Proxmox hardcodes "Only root can pass arbitrary filesystem paths" for bind
+# mounts, checking literally `authuser eq 'root@pam'` — an API token (even one
+# for root@pam) is rejected. `pct set` run locally over SSH as root satisfies
+# that check, so we configure bind mounts this way instead of via the API.
+- name: Configure bind mounts for {{ inventory_hostname }}
+  command: "pct set {{ lxc_id }} -{{ item.key }} {{ item.value }}"
+  loop: "{{ (lxc_mounts | default({})) | dict2items }}"
+  changed_when: false
+  delegate_to: pve
+
+# Host device passthrough (e.g. dev0: "/dev/dri/renderD128,gid=104" for
+# QuickSync/VAAPI hwaccel). Same `pct set` rationale as bind mounts above.
+- name: Configure device passthrough for {{ inventory_hostname }}
+  command: "pct set {{ lxc_id }} -{{ item.key }} {{ item.value }}"
+  loop: "{{ (lxc_devices | default({})) | dict2items }}"
+  changed_when: false
+  delegate_to: pve
+
+- name: Start container {{ inventory_hostname }}
+  community.proxmox.proxmox:
+    api_host: "{{ proxmox_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_token_id: "{{ proxmox_api_token_id }}"
+    api_token_secret: "{{ proxmox_api_token_secret }}"
+    node: "{{ proxmox_node }}"
+    vmid: "{{ lxc_id }}"
+    hostname: "{{ inventory_hostname }}"
+    state: started
+  delegate_to: pve
+
+# Fresh template containers have no authorized_keys, so SSH would otherwise
+# fail. Match the key set already authorized on the hand-built containers.
+- name: Wait for pct exec to be ready in {{ inventory_hostname }}
+  command: pct exec {{ lxc_id }} -- mkdir -p /root/.ssh
+  register: mkdir_ssh
+  until: mkdir_ssh.rc == 0
+  retries: 15
+  delay: 2
+  changed_when: false
+  delegate_to: pve
+
+- name: Push authorized_keys to {{ inventory_hostname }}
+  copy:
+    content: "{{ proxmox_ssh_authorized_keys | join('\n') }}\n"
+    dest: "/tmp/authorized_keys_{{ lxc_id }}"
+  delegate_to: pve
+
+- name: Install authorized_keys in {{ inventory_hostname }}
+  shell: >
+    pct push {{ lxc_id }} /tmp/authorized_keys_{{ lxc_id }} /root/.ssh/authorized_keys &&
+    pct exec {{ lxc_id }} -- chmod 600 /root/.ssh/authorized_keys &&
+    pct exec {{ lxc_id }} -- chmod 700 /root/.ssh &&
+    rm /tmp/authorized_keys_{{ lxc_id }}
+  changed_when: false
+  delegate_to: pve
+
+- name: Wait for container SSH to come up
+  wait_for:
+    host: "{{ ansible_host }}"
+    port: 22
+    timeout: 60
+  delegate_to: localhost

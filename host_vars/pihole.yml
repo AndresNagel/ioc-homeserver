@@ -1,0 +1,31 @@
+---
+# host_vars/pihole.yml
+# Vars specific to the pihole host
+# pihole_web_password lives in group_vars/all/vault.yml
+
+pihole_adlists:
+  - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+  - https://adaway.org/hosts.txt
+  - https://v.firebog.net/hosts/AdguardDNS.txt
+  - https://v.firebog.net/hosts/Easylist.txt
+  - https://v.firebog.net/hosts/Easyprivacy.txt
+  - https://v.firebog.net/hosts/Prigent-Ads.txt
+  # Add/remove lists here and re-run the playbook
+
+# Reflects the actual current LAN topology (see CONTEXT.md / memory for history)
+# .internal is IETF-reserved for private networks (RFC 9476) — avoids the
+# mDNS/Avahi conflicts that .local causes.
+pihole_custom_dns:
+  - { ip: "192.168.1.253", name: "proxmox.internal" }
+  - { ip: "192.168.1.253", name: "homarr.internal" }
+  - { ip: "192.168.1.100", name: "pihole.internal" }
+  - { ip: "192.168.1.101", name: "lidarr.internal" }
+  - { ip: "192.168.1.102", name: "jellyfin.internal" }
+  - { ip: "192.168.1.103", name: "transmission.internal" }
+  - { ip: "192.168.1.104", name: "sonarr.internal" }
+  - { ip: "192.168.1.105", name: "radarr.internal" }
+  - { ip: "192.168.1.106", name: "navidrome.internal" }
+  - { ip: "192.168.1.27",  name: "semaphore.internal" }
+  - { ip: "192.168.1.110", name: "prowlarr.internal" }
+  - { ip: "192.168.1.111", name: "flaresolverr.internal" }
+  - { ip: "192.168.1.28",  name: "forgejo.internal" }

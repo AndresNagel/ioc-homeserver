@@ -1,0 +1,8 @@
+[Unit]
+Description=Remux BDMV concert rips into chaptered MKV for Jellyfin
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/remux_concerts.sh
+Nice=19
+IOSchedulingClass=idle
