@@ -13,6 +13,9 @@ DISABLE_SSH      = false
 SSH_PORT         = 22
 LFS_START_SERVER = true
 LFS_CONTENT_PATH = /var/lib/forgejo/data/lfs
+{% if forgejo_lfs_jwt_secret %}
+LFS_JWT_SECRET   = {{ forgejo_lfs_jwt_secret }}
+{% endif %}
 
 [database]
 DB_TYPE  = sqlite3
@@ -42,3 +45,7 @@ ALLOW_ONLY_EXTERNAL_REGISTRATION  = false
 ENABLED          = true
 DEFAULT_INTERVAL = 8h
 MIN_INTERVAL     = 10m
+{% if forgejo_jwt_secret %}
+[oauth2]
+JWT_SECRET = {{ forgejo_jwt_secret }}
+{% endif %}
