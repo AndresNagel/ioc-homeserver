@@ -38,6 +38,13 @@ new downloads just get tidied up automatically. If you want to check on it
 (or trigger it manually), see
 [Operations: media normalization](docs/OPERATIONS.md#media-normalization-normalize-media).
 
+## Want to run this yourself?
+
+If a friend gave you this repo and you want to set up the same stack on your
+own Proxmox box, see **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**
+— it walks through what needs to change (network, storage paths, secrets,
+etc.) to make this yours.
+
 ## Want to dig deeper?
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — how it's all laid out:
