@@ -777,6 +777,124 @@
                 "type": null,
                 "properties": []
             }
+        },
+        {
+            "id": "ac9053bf-0fdc-49a1-91bd-dff611dede25",
+            "name": "Forgejo",
+            "url": "http://192.168.1.28:3001",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/forgejo.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.28:3001/"
+            },
+            "area": {
+                "type": "wrapper",
+                "properties": {
+                    "id": "default"
+                }
+            },
+            "shape": {
+                "md": {
+                    "location": {
+                        "x": 0,
+                        "y": 3
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "lg": {
+                    "location": {
+                        "x": 0,
+                        "y": 4
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
+        },
+        {
+            "id": "3210ae3e-0e9c-4998-b525-4d5895566154",
+            "name": "Dash.",
+            "url": "http://192.168.1.253:3001",
+            "appearance": {
+                "iconUrl": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/svg/dashdot.svg",
+                "appNameStatus": "normal",
+                "positionAppName": "column",
+                "lineClampAppName": 1,
+                "appNameFontSize": 16
+            },
+            "network": {
+                "enabledStatusChecker": true,
+                "statusCodes": [
+                    "200",
+                    "301",
+                    "302",
+                    "304",
+                    "307",
+                    "308"
+                ]
+            },
+            "behaviour": {
+                "isOpeningNewTab": true,
+                "externalUrl": "http://192.168.1.253:3001/"
+            },
+            "area": {
+                "type": "wrapper",
+                "properties": {
+                    "id": "default"
+                }
+            },
+            "shape": {
+                "md": {
+                    "location": {
+                        "x": 1,
+                        "y": 3
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                },
+                "lg": {
+                    "location": {
+                        "x": 1,
+                        "y": 4
+                    },
+                    "size": {
+                        "width": 1,
+                        "height": 1
+                    }
+                }
+            },
+            "integration": {
+                "type": null,
+                "properties": []
+            }
         }
     ],
     "widgets": [],
