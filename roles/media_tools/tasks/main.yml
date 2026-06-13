@@ -2,7 +2,8 @@
 # roles/media_tools/tasks/main.yml
 # Media maintenance tooling on the Proxmox host (runs against /mnt/ssd2tb
 # directly — no LXC needed). Currently: BDMV concert -> chaptered MKV remux,
-# and a follow-up HEVC compression pass for WiFi-friendly streaming.
+# a follow-up HEVC compression pass for WiFi-friendly streaming, and a daily
+# pass normalizing the movies/series libraries to 1080p HEVC + stereo AAC.
 
 - name: Install mkvtoolnix, ffmpeg and Intel VAAPI driver (for QuickSync)
   apt:
@@ -51,6 +52,29 @@
 - name: Enable and start compress-concerts timer
   systemd:
     name: compress-concerts.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Deploy normalize_media.sh
+  copy:
+    src: normalize_media.sh
+    dest: /usr/local/bin/normalize_media.sh
+    mode: '0755'
+
+- name: Deploy normalize-media systemd service
+  copy:
+    src: normalize-media.service
+    dest: /etc/systemd/system/normalize-media.service
+
+- name: Deploy normalize-media systemd timer
+  copy:
+    src: normalize-media.timer
+    dest: /etc/systemd/system/normalize-media.timer
+
+- name: Enable and start normalize-media timer
+  systemd:
+    name: normalize-media.timer
     enabled: true
     state: started
     daemon_reload: true

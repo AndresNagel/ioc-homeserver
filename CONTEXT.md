@@ -1,5 +1,12 @@
-# CONTEXT.md — Homelab IaC Session Handoff
-# Generated from claude.ai session — read this first before doing anything
+# CONTEXT.md — Homelab IaC Session Handoff (HISTORICAL)
+# Generated from claude.ai session — this was the original planning doc.
+#
+# >>> For current architecture, components, IPs/LXC IDs, and operations,
+# >>> see README.md instead. The stack table, LXC IDs (100-108), and IPs
+# >>> below reflect the ORIGINAL PLAN, not the live host (which has 12
+# >>> services on IDs 100-112, Transmission instead of qBittorrent, Homepage
+# >>> instead of no dashboard, etc.) — kept here only for historical
+# >>> rationale (e.g. "no Terraform" decision) and the still-open VPN TODO.
 
 ## Who you are talking to
 hishkaberry, working from a machine called `kiwi` (running NixOS or similar).

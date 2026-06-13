@@ -1,0 +1,8 @@
+[Unit]
+Description=Normalize media library audio (>2ch -> AAC stereo) and video (>1080p -> HEVC 1080p)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/normalize_media.sh
+Nice=19
+IOSchedulingClass=idle
