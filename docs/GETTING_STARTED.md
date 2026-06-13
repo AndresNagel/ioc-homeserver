@@ -118,19 +118,71 @@ The whole Forgejo + Semaphore CI/CD loop is optional, too — you can always
 just run the three playbooks by hand from your laptop whenever you change
 something.
 
-## 9. Optional: hardware video transcoding (Intel QuickSync)
+## 9. Media-library automation (`media_tools`) — read this before running
 
-`roles/jellyfin` and `roles/media_tools` pass through `/dev/dri/renderD128`
-and `/dev/dri/card0` and install Intel's VAAPI driver, for fast hardware
-transcoding. If your Proxmox host's CPU doesn't have an Intel iGPU:
+`0_prepare_host.yml` deploys **three daily systemd timers** on the Proxmox
+host that touch your media library automatically, with no opt-in step. Know
+what they do before you run it:
 
-- Drop the `dev0`/`dev1` lines for the `jellyfin` container in
-  `1_provision_containers.yml` — Jellyfin will fall back to software
-  transcoding (slower, but works).
-- Skip the `media_tools` role in `0_prepare_host.yml` — its normalize/remux
-  jobs assume VAAPI is available.
+- **`remux-concerts`** / **`compress-concerts`** — only do anything if
+  `/mnt/ssd2tb/media/concerts/` contains BDMV rips (specific to the original
+  owner's concert collection). If that directory is empty or missing, these
+  are harmless no-ops — but they still get installed and run daily.
+- **`normalize-media`** — this one matters for everyone. It walks your whole
+  Sonarr/Radarr library (`series/` and `media/movies/`) and, **in place**,
+  downmixes any audio track with more than 2 channels to stereo AAC and
+  re-encodes any video taller than 1080p down to 1080p HEVC. If you care
+  about keeping 4K/HDR or surround-sound (5.1/7.1/Atmos) files as-is, this
+  will quietly throw that away the first night it runs.
 
-## 10. Run it
+### Your options
+- **Skip all of it**: remove `media_tools` from the role list in
+  `0_prepare_host.yml` before running it.
+- **Deploy it, but turn specific timers off afterwards**:
+  ```bash
+  systemctl disable --now normalize-media.timer compress-concerts.timer remux-concerts.timer
+  ```
+- **Keep `normalize-media` but change its targets** — edit the height
+  (`1080`) and audio-channel (`2`) thresholds near the top of
+  `roles/media_tools/files/normalize_media.sh` before deploying, e.g. raise
+  the height limit to `2160` to allow 4K, or the channel limit to `6` to
+  keep 5.1 audio.
+
+See [docs/OPERATIONS.md](OPERATIONS.md#media-normalization-normalize-media)
+for how to check what these jobs have done so far on a host where they're
+already running.
+
+### GPU requirements
+`roles/jellyfin` and `media_tools` assume an **Intel iGPU with QuickSync**
+(`/dev/dri/renderD128` + `/dev/dri/card0`, `intel-media-va-driver` package).
+If your Proxmox host's CPU is different:
+
+- **AMD iGPU/GPU**: VAAPI still applies, but you'd need `mesa-va-drivers`
+  instead of `intel-media-va-driver` in `roles/jellyfin` and
+  `roles/media_tools`, and the device paths may differ — check
+  `ls /dev/dri` on your host and adjust the `dev0`/`dev1` lines in
+  `1_provision_containers.yml`.
+- **Nvidia GPU**: VAAPI doesn't apply at all — Jellyfin would need NVENC
+  configuration instead, which isn't set up in this repo.
+- **No dedicated GPU / unsure**: drop the `dev0`/`dev1` lines for the
+  `jellyfin` container in `1_provision_containers.yml` (Jellyfin falls back
+  to software transcoding — slower, but works) and skip `media_tools`
+  entirely as above.
+
+## 10. A few more things worth checking
+
+- **Transmission has no login.** Its RPC web UI is open to the whole LAN
+  with no username/password (`--allowed *.*.*.*` in `roles/transmission`).
+  Fine on a trusted home network; lock it down first if your LAN includes
+  guests or other untrusted devices.
+- **LXC IDs and IPs might collide** with containers you already have on
+  Proxmox — run `pct list` before step 4 and adjust `lxc_id`/`ansible_host`
+  in `inventory.yml` if anything overlaps.
+- **The Forgejo GitHub mirror and Semaphore webhook auto-apply on push** —
+  if you keep the GitOps loop from step 8, remember that pushing to `main`
+  immediately runs the playbooks against your real host.
+
+## 11. Run it
 
 Once the above is done, follow
 [docs/OPERATIONS.md → Bootstrapping a host from scratch](OPERATIONS.md#bootstrapping-a-host-from-scratch)
