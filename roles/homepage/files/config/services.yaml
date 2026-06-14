@@ -2,43 +2,43 @@
 - Media:
     - Jellyfin:
         icon: jellyfin.png
-        href: http://192.168.1.102:8096
+        href: https://jellyfin.welpes.com
         description: Media server
 
     - Navidrome:
         icon: navidrome.png
-        href: http://192.168.1.106:4533
+        href: https://navidrome.welpes.com
         description: Music streaming
 
 - Arr Suite:
     - Sonarr:
         icon: sonarr.png
-        href: http://192.168.1.104:8989
+        href: https://sonarr.welpes.com
         description: TV management
 
     - Radarr:
         icon: radarr.png
-        href: http://192.168.1.105:7878
+        href: https://radarr.welpes.com
         description: Movie management
 
     - Lidarr:
         icon: lidarr.png
-        href: http://192.168.1.101:8686
+        href: https://lidarr.welpes.com
         description: Music management
 
     - Prowlarr:
         icon: prowlarr.png
-        href: http://192.168.1.110:9696
+        href: https://prowlarr.welpes.com
         description: Indexer management
 
     - Bazarr:
         icon: bazarr.png
-        href: http://192.168.1.112:6767
+        href: https://bazarr.welpes.com
         description: Subtitles
 
     - Transmission:
         icon: transmission.png
-        href: http://192.168.1.103:9091/transmission/web
+        href: https://transmission.welpes.com/transmission/web
         description: Torrent client
 
     - Flaresolverr:
@@ -54,15 +54,15 @@
 
     - Pi-hole:
         icon: pi-hole.png
-        href: http://192.168.1.100/admin
+        href: https://pihole.welpes.com/admin
         description: DNS / ad-block
 
     - Semaphore:
         icon: semaphore.png
-        href: http://192.168.1.27:3000
+        href: https://semaphore.welpes.com
         description: Ansible CI/CD
 
     - Forgejo:
         icon: forgejo.png
-        href: http://192.168.1.28:3001
+        href: https://forgejo.welpes.com
         description: Git hosting
