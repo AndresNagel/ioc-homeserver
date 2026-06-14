@@ -25,10 +25,10 @@ pihole_custom_dns:
   - { ip: "192.168.1.104", name: "sonarr.internal" }
   - { ip: "192.168.1.105", name: "radarr.internal" }
   - { ip: "192.168.1.106", name: "navidrome.internal" }
-  - { ip: "192.168.1.27",  name: "semaphore.internal" }
+  - { ip: "192.168.1.107", name: "semaphore.internal" }
   - { ip: "192.168.1.110", name: "prowlarr.internal" }
   - { ip: "192.168.1.111", name: "flaresolverr.internal" }
-  - { ip: "192.168.1.28",  name: "forgejo.internal" }
+  - { ip: "192.168.1.108", name: "forgejo.internal" }
   - { ip: "192.168.1.112", name: "bazarr.internal" }
   - { ip: "192.168.1.109", name: "jellyseerr.internal" }
 

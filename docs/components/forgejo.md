@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **LXC ID** | 108 |
-| **IP** | 192.168.1.28 |
+| **IP** | 192.168.1.108 |
 | **Internal DNS** | `forgejo.internal` |
 | **Public domain** | forgejo.welpes.com |
 | **Port** | 3001 (HTTP + Git), 22 (SSH, shared with the host's sshd) |

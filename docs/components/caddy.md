@@ -48,8 +48,8 @@ certificate, without exposing anything to the internet — Pi-hole resolves
 | bazarr.welpes.com | 192.168.1.112:6767 |
 | transmission.welpes.com | 192.168.1.103:9091 |
 | pihole.welpes.com | 192.168.1.100:80 |
-| semaphore.welpes.com | 192.168.1.27:3000 |
-| forgejo.welpes.com | 192.168.1.28:3001 |
+| semaphore.welpes.com | 192.168.1.107:3000 |
+| forgejo.welpes.com | 192.168.1.108:3001 |
 | jellyseerr.welpes.com | 192.168.1.109:5055 |
 | wiki.welpes.com | static files, `/var/www/wiki` (this LXC, see below) |
 

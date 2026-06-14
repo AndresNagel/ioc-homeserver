@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **LXC ID** | 107 |
-| **IP** | 192.168.1.27 |
+| **IP** | 192.168.1.107 |
 | **Internal DNS** | `semaphore.internal` |
 | **Public domain** | semaphore.welpes.com |
 | **Port** | 3000 |

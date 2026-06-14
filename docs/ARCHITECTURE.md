@@ -66,8 +66,8 @@ Key points:
 | Sonarr | 104 | 192.168.1.104 | `sonarr.internal` | 8989 | `arr` | TV show management |
 | Radarr | 105 | 192.168.1.105 | `radarr.internal` | 7878 | `arr` | Movie management |
 | Navidrome | 106 | 192.168.1.106 | `navidrome.internal` | 4533 | `navidrome` | Music streaming (Subsonic API) |
-| Semaphore | 107 | 192.168.1.27 | `semaphore.internal` | 3000 | `semaphore` | Ansible CI/CD runner |
-| Forgejo | 108 | 192.168.1.28 | `forgejo.internal` | 3001 | `forgejo` | Git hosting — source of truth for this repo |
+| Semaphore | 107 | 192.168.1.107 | `semaphore.internal` | 3000 | `semaphore` | Ansible CI/CD runner |
+| Forgejo | 108 | 192.168.1.108 | `forgejo.internal` | 3001 | `forgejo` | Git hosting — source of truth for this repo |
 | Prowlarr | 110 | 192.168.1.110 | `prowlarr.internal` | 9696 | `arr` | Indexer management for the *arr apps |
 | FlareSolverr | 111 | 192.168.1.111 | `flaresolverr.internal` | 8191 | `flaresolverr` | Cloudflare-bypass proxy for Prowlarr |
 | Bazarr | 112 | 192.168.1.112 | `bazarr.internal` | 6767 | `bazarr` | Subtitle automation for Sonarr/Radarr |
