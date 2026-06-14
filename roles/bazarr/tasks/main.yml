@@ -156,15 +156,19 @@
 
 # opensubtitlescom's free tier caps at ~20 downloads/day, which throttles
 # the whole provider list for hours once the library's missing-subtitle
-# backlog exceeds that. Add no-account-required providers as fallbacks so
-# searches still find subtitles while opensubtitlescom is throttled.
-- name: Add free fallback subtitle providers
+# backlog exceeds that. Add fallback providers so searches still find
+# subtitles while opensubtitlescom is throttled: podnapisi/subf2m/gestdown
+# need no account, subdl needs the free API key stored in vault.
+- name: Add fallback subtitle providers
   uri:
     url: "http://localhost:6767/api/system/settings?apikey={{ bazarr_api_key.stdout }}"
     method: POST
     body_format: form-urlencoded
     body:
-      settings-general-enabled_providers: "{{ bazarr_settings.json.general.enabled_providers | union(['podnapisi', 'subf2m', 'gestdown']) }}"
+      settings-general-enabled_providers: "{{ bazarr_settings.json.general.enabled_providers | union(['podnapisi', 'subf2m', 'gestdown', 'subdl']) }}"
+      settings-subdl-api_key: "{{ bazarr_subdl_api_key }}"
     status_code: [200, 204]
   no_log: true
-  when: (['podnapisi', 'subf2m', 'gestdown'] | difference(bazarr_settings.json.general.enabled_providers)) | length > 0
+  when: >-
+    (['podnapisi', 'subf2m', 'gestdown', 'subdl'] | difference(bazarr_settings.json.general.enabled_providers)) | length > 0
+    or bazarr_settings.json.subdl.api_key != bazarr_subdl_api_key
