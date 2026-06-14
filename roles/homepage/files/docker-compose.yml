@@ -8,7 +8,7 @@ services:
       - ./config:/app/config
       - /mnt/ssd2tb:/mnt/ssd2tb:ro
     environment:
-      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.253:3000,homepage.internal:3000
+      - HOMEPAGE_ALLOWED_HOSTS=192.168.1.253:3000,homepage.internal:3000,homepage.welpes.com
     security_opt:
       - apparmor:unconfined
     restart: unless-stopped
