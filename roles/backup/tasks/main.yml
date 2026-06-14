@@ -1,0 +1,68 @@
+---
+# roles/backup/tasks/main.yml
+# Builds a consistent snapshot of backup_root: rsync everything (minus
+# backup_excludes), then hot-copy any SQLite databases on top via
+# `sqlite3 .backup` so a write-in-progress can't produce a corrupt copy.
+# The resulting tarball is fetched to the control machine and the remote
+# temp files are removed. Local retention/pruning happens in 3_backup.yml.
+
+- name: Ensure sqlite3 and rsync are installed
+  apt:
+    name: [sqlite3, rsync]
+    state: present
+
+- name: Set staging/archive paths
+  set_fact:
+    backup_stage: "/tmp/backup-{{ inventory_hostname }}"
+    backup_archive: "/tmp/{{ inventory_hostname }}-{{ ansible_facts['date_time']['iso8601_basic_short'] }}.tar.gz"
+
+- name: Clean any leftover staging directory
+  file:
+    path: "{{ backup_stage }}"
+    state: absent
+
+- name: Copy backup_root into staging area (excluding databases, handled separately)
+  command: >
+    rsync -a
+    {% for ex in backup_excludes %}--exclude={{ ex }} {% endfor %}
+    --exclude=*.db --exclude=*.db-wal --exclude=*.db-shm
+    --exclude=*.sqlite --exclude=*.sqlite3
+    {{ backup_root }}/ {{ backup_stage }}/
+
+- name: Find SQLite databases under backup_root
+  command: >
+    find {{ backup_root }} -type f
+    ( -iname *.db -o -iname *.sqlite -o -iname *.sqlite3 )
+  register: backup_sqlite_files
+  changed_when: false
+
+- name: Copy SQLite hot-backup helper script
+  copy:
+    src: sqlite_backup.py
+    dest: /tmp/sqlite_backup.py
+    mode: '0755'
+  when: backup_sqlite_files.stdout_lines | length > 0
+
+- name: Hot-copy SQLite databases into staging
+  command: >
+    python3 /tmp/sqlite_backup.py {{ backup_root }} {{ backup_stage }}
+    {{ backup_sqlite_files.stdout_lines | join(' ') }}
+  when: backup_sqlite_files.stdout_lines | length > 0
+
+- name: Create backup archive from staging area
+  command: "tar czf {{ backup_archive }} -C {{ backup_stage }} ."
+
+- name: Fetch backup archive to control machine
+  fetch:
+    src: "{{ backup_archive }}"
+    dest: "{{ backup_local_dir }}/{{ inventory_hostname }}/"
+    flat: true
+
+- name: Clean up remote temp files
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ backup_stage }}"
+    - "{{ backup_archive }}"
+    - /tmp/sqlite_backup.py

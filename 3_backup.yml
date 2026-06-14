@@ -1,0 +1,36 @@
+---
+# 3_backup.yml
+# Snapshots each service's config/database (see backup_root/backup_excludes
+# in inventory.yml), pulls the archive down to this control machine under
+# ~/homeserver-backups/<host>/, and prunes old archives beyond the retention
+# count. Intended to run on a schedule (cron) from the control machine.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml 3_backup.yml --vault-password-file .vault_pass
+#
+# Run a single host only:
+#   ansible-playbook -i inventory.yml 3_backup.yml --limit forgejo --vault-password-file .vault_pass
+
+- name: Back up service configs/databases
+  hosts: backup_targets
+  vars:
+    backup_local_dir: "{{ lookup('env', 'HOME') }}/homeserver-backups"
+  roles:
+    - backup
+
+- name: Prune old local backups
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    backup_local_dir: "{{ lookup('env', 'HOME') }}/homeserver-backups"
+    backup_retention: 7
+  tasks:
+    - name: Keep only the {{ backup_retention }} most recent archives per host
+      shell: >
+        cd {{ backup_local_dir }}/{{ item }} &&
+        ls -1t -- *.tar.gz | tail -n +{{ backup_retention + 1 }} | xargs -r rm -f --
+      args:
+        executable: /bin/bash
+      loop: "{{ groups['backup_targets'] }}"
+      changed_when: false

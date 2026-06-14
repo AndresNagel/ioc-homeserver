@@ -16,6 +16,7 @@ all:
           lxc_id: 100
           lxc_memory: 512
           lxc_cores: 1
+          backup_root: /etc/pihole
 
         lidarr:
           ansible_host: 192.168.1.101
@@ -23,6 +24,10 @@ all:
           lxc_id: 101
           lxc_memory: 1024
           lxc_cores: 2
+          backup_root: /var/lib/lidarr
+          # corruption_backup_20260613 is a one-off artifact from the 2026-06-13
+          # incident, not ongoing state — see project_lidarr_db_corruption memory.
+          backup_excludes: [MediaCover, logs, Logs, logs.db, corruption_backup_20260613]
 
         transmission:
           ansible_host: 192.168.1.103
@@ -30,6 +35,7 @@ all:
           lxc_id: 103
           lxc_memory: 512
           lxc_cores: 1
+          backup_root: /var/lib/transmission-daemon/info
 
         sonarr:
           ansible_host: 192.168.1.104
@@ -37,6 +43,8 @@ all:
           lxc_id: 104
           lxc_memory: 1024
           lxc_cores: 2
+          backup_root: /var/lib/sonarr
+          backup_excludes: [MediaCover, logs, Logs]
 
         radarr:
           ansible_host: 192.168.1.105
@@ -44,6 +52,8 @@ all:
           lxc_id: 105
           lxc_memory: 2048
           lxc_cores: 2
+          backup_root: /var/lib/radarr
+          backup_excludes: [MediaCover, logs, Logs]
 
         prowlarr:
           ansible_host: 192.168.1.110
@@ -51,6 +61,8 @@ all:
           lxc_id: 110
           lxc_memory: 512
           lxc_cores: 1
+          backup_root: /var/lib/prowlarr
+          backup_excludes: [MediaCover, logs, Logs]
 
         jellyfin:
           ansible_host: 192.168.1.102
@@ -58,6 +70,8 @@ all:
           lxc_id: 102
           lxc_memory: 2048
           lxc_cores: 2
+          backup_root: /var/lib/jellyfin
+          backup_excludes: [cache, log, metadata, transcodes]
 
         navidrome:
           ansible_host: 192.168.1.106
@@ -65,6 +79,8 @@ all:
           lxc_id: 106
           lxc_memory: 1024
           lxc_cores: 2
+          backup_root: /var/lib/navidrome
+          backup_excludes: [cache]
 
         semaphore:
           ansible_host: 192.168.1.27
@@ -72,6 +88,8 @@ all:
           lxc_id: 107
           lxc_memory: 256
           lxc_cores: 1
+          backup_root: /var/lib/semaphore
+          backup_excludes: [tmp]
 
         forgejo:
           ansible_host: 192.168.1.28
@@ -79,6 +97,8 @@ all:
           lxc_id: 108
           lxc_memory: 512
           lxc_cores: 1
+          backup_root: /var/lib/forgejo
+          backup_excludes: ["data/sessions", "data/tmp", "data/indexers", "data/repo-archive"]
 
         flaresolverr:
           ansible_host: 192.168.1.111
@@ -93,6 +113,8 @@ all:
           lxc_id: 112
           lxc_memory: 1024
           lxc_cores: 2
+          backup_root: /var/lib/bazarr
+          backup_excludes: [log, logs, cache]
 
         caddy:
           ansible_host: 192.168.1.113
@@ -100,3 +122,19 @@ all:
           lxc_id: 113
           lxc_memory: 512
           lxc_cores: 1
+
+    # Hosts with persistent config/state worth backing up — see 3_backup.yml.
+    # caddy and flaresolverr are excluded: stateless / fully templated.
+    backup_targets:
+      hosts:
+        pihole: {}
+        lidarr: {}
+        transmission: {}
+        sonarr: {}
+        radarr: {}
+        prowlarr: {}
+        jellyfin: {}
+        navidrome: {}
+        semaphore: {}
+        forgejo: {}
+        bazarr: {}
