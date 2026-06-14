@@ -1,0 +1,23 @@
+---
+# 6_normalize_media_now.yml
+# On-demand task: kicks off the normalize-media oneshot service immediately
+# instead of waiting for its daily timer (00:05) — e.g. after adding a movie
+# or episode you want downmixed/transcoded before watching it tonight.
+#
+# Fire-and-forget: the task returns immediately while the (potentially
+# long-running) transcode continues on pve. Check progress with
+# `journalctl -u normalize-media -f`.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml 6_normalize_media_now.yml --vault-password-file .vault_pass
+
+- name: Run normalize-media now
+  hosts: pve
+  gather_facts: false
+  tasks:
+    - name: Start normalize-media.service (fire and forget)
+      systemd:
+        name: normalize-media.service
+        state: started
+      async: 7200
+      poll: 0

@@ -1,0 +1,30 @@
+---
+# 5_jellyfin_refresh.yml
+# On-demand task: triggers a full Jellyfin library scan (picks up new/changed
+# media files immediately instead of waiting for Jellyfin's own schedule).
+# Reuses the Jellyfin API key Jellyseerr already has stored for its own
+# Jellyfin connection — no separate credential needed, self-healing if it
+# ever rotates.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml 5_jellyfin_refresh.yml --vault-password-file .vault_pass
+
+- name: Trigger Jellyfin library scan
+  hosts: jellyseerr
+  gather_facts: false
+  tasks:
+    - name: Read Jellyfin API key from Jellyseerr's settings
+      command: python3 -c "import json; print(json.load(open('/var/lib/jellyseerr/settings.json'))['jellyfin']['apiKey'])"
+      register: jellyfin_api_key
+      changed_when: false
+      check_mode: false
+      no_log: true
+
+    - name: Request Jellyfin library refresh
+      uri:
+        url: "http://192.168.1.102:8096/Library/Refresh"
+        method: POST
+        headers:
+          X-Emby-Token: "{{ jellyfin_api_key.stdout }}"
+        status_code: 204
+      no_log: true
