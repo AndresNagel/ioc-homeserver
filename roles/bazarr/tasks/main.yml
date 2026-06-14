@@ -83,6 +83,43 @@
     state: started
     daemon_reload: true
 
+# Bazarr's SQLite connection only sets PRAGMA foreign_keys=ON, leaving the
+# database in the default DELETE journal mode with busy_timeout=0. Under
+# concurrent access (scheduler jobs + Sonarr/Radarr SignalR listeners + UI)
+# this throws "database is locked" errors during subtitle searches. WAL mode
+# lets readers run alongside a writer and is persisted in the db file itself.
+- name: Check Bazarr database exists
+  stat:
+    path: /var/lib/bazarr/db/bazarr.db
+  register: bazarr_db_stat
+
+- name: Check current Bazarr SQLite journal mode
+  command: sqlite3 /var/lib/bazarr/db/bazarr.db "PRAGMA journal_mode;"
+  register: bazarr_journal_mode
+  changed_when: false
+  when: bazarr_db_stat.stat.exists
+
+- name: Switch Bazarr database to WAL journal mode
+  when: bazarr_db_stat.stat.exists and bazarr_journal_mode.stdout != 'wal'
+  block:
+    - name: Stop bazarr before changing journal mode
+      systemd:
+        name: bazarr
+        state: stopped
+
+    - name: Set WAL journal mode on Bazarr database
+      command: sqlite3 /var/lib/bazarr/db/bazarr.db "PRAGMA journal_mode=WAL;"
+
+    - name: Start bazarr
+      systemd:
+        name: bazarr
+        state: started
+
+    - name: Wait for Bazarr to come back up
+      wait_for:
+        port: 6767
+        delay: 2
+
 # Set the web UI login to admin:admin via Bazarr's own settings API (same
 # call its frontend makes) — config.yaml's password field is hashed, so it
 # can't be edited directly.
@@ -116,3 +153,18 @@
   no_log: true
   when: bazarr_settings.json.auth.username != 'admin' or bazarr_settings.json.auth.type != 'form'
   notify: Restart bazarr
+
+# opensubtitlescom's free tier caps at ~20 downloads/day, which throttles
+# the whole provider list for hours once the library's missing-subtitle
+# backlog exceeds that. Add no-account-required providers as fallbacks so
+# searches still find subtitles while opensubtitlescom is throttled.
+- name: Add free fallback subtitle providers
+  uri:
+    url: "http://localhost:6767/api/system/settings?apikey={{ bazarr_api_key.stdout }}"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      settings-general-enabled_providers: "{{ bazarr_settings.json.general.enabled_providers | union(['podnapisi', 'subf2m', 'gestdown']) }}"
+    status_code: [200, 204]
+  no_log: true
+  when: (['podnapisi', 'subf2m', 'gestdown'] | difference(bazarr_settings.json.general.enabled_providers)) | length > 0
