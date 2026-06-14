@@ -1,0 +1,71 @@
+---
+# 4_homepage_widgets.yml
+# Refreshes the API keys Homepage's dashboard widgets use, and re-templates
+# its services.yaml. Reads each app's live API key (no_log — never printed),
+# writes them to /opt/homepage/.env, and restarts the Homepage container.
+#
+# Safe to re-run any time an app's API key changes (e.g. after a reinstall).
+#
+# Usage:
+#   ansible-playbook -i inventory.yml 4_homepage_widgets.yml --vault-password-file .vault_pass
+
+- name: Gather arr-suite API keys
+  hosts: sonarr:radarr:lidarr:prowlarr
+  gather_facts: false
+  tasks:
+    - name: Read API key from config.xml
+      command: "grep -oP '(?<=<ApiKey>)[^<]+' /var/lib/{{ inventory_hostname }}/config.xml"
+      register: arr_widget_api_key
+      changed_when: false
+      check_mode: false
+      no_log: true
+
+- name: Gather Bazarr API key
+  hosts: bazarr
+  gather_facts: false
+  tasks:
+    - name: Read API key from config.yaml
+      command: >-
+        python3 -c
+        "import re; text = open('/var/lib/bazarr/config/config.yaml').read();
+        block = re.search(r'^auth:\n(?:  .+\n)*', text, re.M).group(0);
+        print(re.search(r'  apikey: (.+)', block).group(1).strip())"
+      register: bazarr_widget_api_key
+      changed_when: false
+      check_mode: false
+      no_log: true
+
+- name: Gather Jellyseerr (Seerr) API key
+  hosts: jellyseerr
+  gather_facts: false
+  tasks:
+    - name: Read API key from settings.json
+      command: python3 -c "import json; print(json.load(open('/var/lib/jellyseerr/settings.json'))['main']['apiKey'])"
+      register: jellyseerr_widget_api_key
+      changed_when: false
+      check_mode: false
+      no_log: true
+
+- name: Deploy Homepage widget config
+  hosts: pve
+  gather_facts: false
+  tasks:
+    - name: Write Homepage widget secrets env file
+      template:
+        src: roles/homepage/templates/homepage.env.j2
+        dest: /opt/homepage/.env
+        mode: '0600'
+      no_log: true
+
+    - name: Template Homepage services.yaml with widgets
+      template:
+        src: roles/homepage/templates/services.yaml.j2
+        dest: /opt/homepage/config/services.yaml
+        mode: '0644'
+
+    - name: Restart Homepage
+      command: docker compose up -d
+      args:
+        chdir: /opt/homepage
+      register: homepage_up
+      changed_when: "'Recreating' in homepage_up.stderr or 'Restarting' in homepage_up.stderr"

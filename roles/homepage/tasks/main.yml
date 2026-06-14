@@ -24,9 +24,30 @@
     mode: '0644'
   loop:
     - settings.yaml
-    - services.yaml
     - widgets.yaml
     - bookmarks.yaml
+
+# services.yaml is templated (not copied) so it can reference widget API
+# keys — see 4_homepage_widgets.yml, which renders it from
+# templates/services.yaml.j2. Provide a no-widgets placeholder here so
+# Homepage has something to load on first boot, before that playbook runs.
+- name: Deploy placeholder Homepage services.yaml (first boot only)
+  copy:
+    src: config/services.yaml
+    dest: /opt/homepage/config/services.yaml
+    mode: '0644'
+    force: false
+
+# .env supplies the {{HOMEPAGE_VAR_*}} secrets referenced by services.yaml;
+# docker-compose's env_file requires it to exist. Real content comes from
+# 4_homepage_widgets.yml — this just ensures `docker compose up` doesn't
+# fail on a fresh deploy before that's been run.
+- name: Ensure Homepage .env file exists (first boot only)
+  copy:
+    content: ""
+    dest: /opt/homepage/.env
+    mode: '0600'
+    force: false
 
 - name: Start Homepage
   command: docker compose up -d

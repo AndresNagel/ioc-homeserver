@@ -7,8 +7,14 @@ services:
     volumes:
       - ./config:/app/config
       - /mnt/ssd2tb:/mnt/ssd2tb:ro
+    env_file:
+      - .env
     environment:
       - HOMEPAGE_ALLOWED_HOSTS=192.168.1.253:3000,homepage.internal:3000,homepage.welpes.com
+      # Proxmox's web UI uses a self-signed cert; the proxmox widget polls
+      # https://192.168.1.253:8006 directly and would otherwise fail TLS
+      # verification (LAN-only, no public exposure).
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
     security_opt:
       - apparmor:unconfined
     restart: unless-stopped
