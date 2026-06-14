@@ -14,6 +14,35 @@
 | Bridge | {{ proxmox_bridge }} |
 | Timezone | {{ timezone }} |
 
+## Topology
+
+```mermaid
+graph LR
+    Client(["LAN client"])
+    Pihole["Pi-hole DNS<br/>{{ hostvars['pihole'].ansible_host }}"]
+    Caddy["Caddy reverse proxy (TLS)<br/>{{ hostvars['caddy'].ansible_host }}"]
+
+    Client -->|DNS| Pihole
+    Client -->|"HTTPS *.welpes.com"| Caddy
+    Client -.->|"*.internal (direct)"| LXCs
+
+    subgraph LXCs["LAN services (*.internal)"]
+{% for r in hostvars['pihole'].pihole_custom_dns if r.name.endswith('.internal') %}
+{% set prefix = r.name.split('.')[0] %}
+        Svc_{{ prefix | capitalize }}["{{ prefix | capitalize }}<br/>{{ r.ip }}"]
+{% endfor %}
+    end
+
+{% for r in hostvars['pihole'].pihole_custom_dns if r.name.endswith('.welpes.com') and r.name != 'wiki.welpes.com' %}
+{% set prefix = r.name.split('.')[0] %}
+    Caddy --> Svc_{{ prefix | capitalize }}
+{% endfor %}
+```
+
+Solid arrows are active proxy/DNS paths. The dotted arrow means clients can
+also reach any `*.internal` service directly on its own IP — Pi-hole just
+resolves the name, Caddy isn't involved.
+
 ## Hosts
 
 | Host | IP | LXC ID | RAM (MB) | vCPUs |
