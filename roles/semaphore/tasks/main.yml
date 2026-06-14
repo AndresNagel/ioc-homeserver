@@ -81,6 +81,45 @@
   become_user: semaphore
   changed_when: false
 
+- name: Check for legacy BoltDB database file
+  stat:
+    path: /var/lib/semaphore/semaphore.db
+  register: semaphore_boltdb_file
+
+- name: Check if BoltDB -> SQLite import already ran
+  stat:
+    path: /var/lib/semaphore/.boltdb_migrated
+  register: semaphore_bolt_migrated
+
+- name: Stop Semaphore before BoltDB import (releases bolt file lock)
+  systemd:
+    name: semaphore
+    state: stopped
+  when:
+    - semaphore_boltdb_file.stat.exists
+    - not semaphore_bolt_migrated.stat.exists
+
+- name: Import existing BoltDB data into SQLite (one-time)
+  command: >
+    semaphore migrate --from-boltdb /var/lib/semaphore/semaphore.db
+    --config /etc/semaphore/config.json
+  become: true
+  become_user: semaphore
+  when:
+    - semaphore_boltdb_file.stat.exists
+    - not semaphore_bolt_migrated.stat.exists
+
+- name: Mark BoltDB -> SQLite import as done
+  file:
+    path: /var/lib/semaphore/.boltdb_migrated
+    state: touch
+    owner: semaphore
+    group: semaphore
+    mode: '0600'
+  when:
+    - semaphore_boltdb_file.stat.exists
+    - not semaphore_bolt_migrated.stat.exists
+
 - name: Check if Semaphore admin user already created
   stat:
     path: /var/lib/semaphore/.admin_created

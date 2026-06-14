@@ -1,7 +1,7 @@
 {
-  "dialect": "bolt",
-  "bolt": {
-    "host": "/var/lib/semaphore/semaphore.db"
+  "dialect": "sqlite",
+  "sqlite": {
+    "host": "/var/lib/semaphore/database.sqlite3"
   },
   "tmp_path": "/tmp/semaphore",
   "cookie_hash": "{{ semaphore_cookie_hash }}",
