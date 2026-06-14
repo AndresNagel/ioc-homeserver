@@ -1,4 +1,7 @@
 - [LAN / Network](/)
+- [Getting started](GETTING_STARTED.md)
+- [Architecture](ARCHITECTURE.md)
+- [Operations](OPERATIONS.md)
 - [Components overview](components/README.md)
 {% for f in lookup('fileglob', playbook_dir + '/docs/components/*.md', wantlist=True) | sort %}
 {% set fname = f | basename %}

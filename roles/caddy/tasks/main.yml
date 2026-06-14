@@ -65,10 +65,10 @@
     group: caddy
     mode: '0644'
 
-- name: Copy component docs into LAN wiki
+- name: Copy docs into LAN wiki
   copy:
-    src: "{{ playbook_dir }}/docs/components/"
-    dest: /var/www/wiki/components/
+    src: "{{ playbook_dir }}/docs/"
+    dest: /var/www/wiki/
     owner: caddy
     group: caddy
     mode: '0644'
