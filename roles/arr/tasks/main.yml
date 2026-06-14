@@ -64,3 +64,34 @@
     enabled: true
     state: started
     daemon_reload: true
+
+# Set the web UI login to admin:admin via the app's own config API, which
+# preserves every other host-config field (apiKey, auth method, etc.) via
+# `combine`. config.xml itself isn't templated (see top-of-file note), so
+# this is the only safe way to change just the credentials.
+- name: Read {{ arr_app | capitalize }} API key
+  command: "grep -oP '(?<=<ApiKey>)[^<]+' /var/lib/{{ arr_app }}/config.xml"
+  register: arr_api_key
+  changed_when: false
+  no_log: true
+
+- name: Get current {{ arr_app | capitalize }} host config
+  uri:
+    url: "http://localhost:{{ arr_port }}/api/{{ arr_api_version }}/config/host/1"
+    headers:
+      X-Api-Key: "{{ arr_api_key.stdout }}"
+    return_content: true
+  register: arr_host_config
+  no_log: true
+
+- name: Set admin:admin login for {{ arr_app | capitalize }}
+  uri:
+    url: "http://localhost:{{ arr_port }}/api/{{ arr_api_version }}/config/host/1"
+    method: PUT
+    headers:
+      X-Api-Key: "{{ arr_api_key.stdout }}"
+    body_format: json
+    body: "{{ arr_host_config.json | combine({'username': 'admin', 'password': 'admin', 'passwordConfirmation': 'admin'}) }}"
+    status_code: [200, 202]
+  no_log: true
+  when: arr_host_config.json.username != 'admin'

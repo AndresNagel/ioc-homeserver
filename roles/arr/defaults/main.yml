@@ -6,3 +6,7 @@
 # asset. Sonarr has moved to a different endpoint/host (services.sonarr.tv)
 # - overridden per-app in 2_configure_services.yml where needed.
 arr_download_url: "https://{{ arr_app }}.servarr.com/v1/update/master/updatefile?os=linux&runtime=netcore&arch=x64"
+
+# API version for the config/host endpoint used to set admin:admin
+# credentials. Sonarr/Radarr/Lidarr are v3; Prowlarr (v1) overrides this.
+arr_api_version: v3

@@ -82,3 +82,37 @@
     enabled: true
     state: started
     daemon_reload: true
+
+# Set the web UI login to admin:admin via Bazarr's own settings API (same
+# call its frontend makes) — config.yaml's password field is hashed, so it
+# can't be edited directly.
+- name: Read Bazarr API key
+  command: >-
+    python3 -c
+    "import re; text = open('/var/lib/bazarr/config/config.yaml').read();
+    block = re.search(r'^auth:\n(?:  .+\n)*', text, re.M).group(0);
+    print(re.search(r'  apikey: (.+)', block).group(1).strip())"
+  register: bazarr_api_key
+  changed_when: false
+  no_log: true
+
+- name: Get current Bazarr settings
+  uri:
+    url: "http://localhost:6767/api/system/settings?apikey={{ bazarr_api_key.stdout }}"
+    return_content: true
+  register: bazarr_settings
+  no_log: true
+
+- name: Set admin:admin login for Bazarr
+  uri:
+    url: "http://localhost:6767/api/system/settings?apikey={{ bazarr_api_key.stdout }}"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      settings-auth-type: form
+      settings-auth-username: admin
+      settings-auth-password: admin
+    status_code: [200, 204]
+  no_log: true
+  when: bazarr_settings.json.auth.username != 'admin' or bazarr_settings.json.auth.type != 'form'
+  notify: Restart bazarr
