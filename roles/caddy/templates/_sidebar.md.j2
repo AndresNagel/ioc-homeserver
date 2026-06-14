@@ -1,0 +1,8 @@
+- [LAN / Network](/)
+- [Components overview](components/README.md)
+{% for f in lookup('fileglob', playbook_dir + '/docs/components/*.md', wantlist=True) | sort %}
+{% set fname = f | basename %}
+{% if fname != 'README.md' %}
+- [{{ lookup('file', f).split('\n')[0].lstrip('#').strip() }}](components/{{ fname }})
+{% endif %}
+{% endfor %}

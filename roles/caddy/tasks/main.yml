@@ -65,6 +65,23 @@
     group: caddy
     mode: '0644'
 
+- name: Copy component docs into LAN wiki
+  copy:
+    src: "{{ playbook_dir }}/docs/components/"
+    dest: /var/www/wiki/components/
+    owner: caddy
+    group: caddy
+    mode: '0644'
+    directory_mode: '0755'
+
+- name: Generate LAN wiki sidebar
+  template:
+    src: _sidebar.md.j2
+    dest: /var/www/wiki/_sidebar.md
+    owner: caddy
+    group: caddy
+    mode: '0644'
+
 - name: Install systemd service
   template:
     src: caddy.service.j2
