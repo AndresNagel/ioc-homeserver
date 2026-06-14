@@ -177,3 +177,55 @@ Config lives in `roles/homepage/files/config/*.yaml` (services, widgets,
 bookmarks, settings) — edit and re-run `0_prepare_host.yml` to redeploy.
 After changing service definitions, hit `POST /api/revalidate` once if the
 dashboard still shows stale content (Next.js static-shell cache).
+
+---
+
+## Known gotchas & open questions
+
+### `--check` mode is broken for the semaphore/forgejo roles
+Both roles have an unconditional `uri` task ("Get latest release") that
+Ansible skips entirely under `--check` (the `uri` module doesn't support
+check mode). The following `set_fact` then fails trying to read `.json` off
+the skipped result. Pre-existing, unrelated to any particular change — just
+run these two roles for real (no `--check`).
+
+### Changing an LXC's IP applies live — no reboot needed
+`community.proxmox.proxmox` (`state: present`, `update: true` by default)
+pushes a new `net0` IP to a running container and it comes up on the new IP
+immediately. `pct reboot` is not required.
+
+### Re-running `1_provision_containers.yml` resets bind-mount ownership
+The "Ensure bind mount source directories exist on proxmox" task resets
+`/opt/appdata/<service>` ownership to `100000:100000` mode `0755`. The
+service's own role (run via `2_configure_services.yml`) then fixes
+ownership/mode back to its real values. This is expected back-and-forth, not
+a bug — but if you run step 1 without following up with step 2, the service
+may fail to read its data dir until step 2 runs.
+
+### Cross-service hardcoded IPs live outside this repo
+- **Semaphore**: project 1 / repository 1's `git_url` is stored in
+  Semaphore's own sqlite DB and hardcodes Forgejo's IP
+  (currently `http://192.168.1.108:3001/homeserver-admin/homelab-ansible.git`).
+  If Forgejo's IP ever changes again, update this via the Semaphore REST API
+  (`POST /api/auth/login`, then `GET`/`PUT /api/project/1/repositories/1`).
+- **Local git remote**: the controller's `origin` remote (`git remote -v`)
+  embeds Forgejo's IP *and* credentials
+  (`http://homeserver-admin:<password>@192.168.1.108:3001/...`). If
+  Forgejo's IP changes, update it with `git remote set-url origin ...` —
+  otherwise pushes fail with a connection error.
+
+### Pi-hole restarts can leave Homepage's Pi-hole widget showing a 401
+Pi-hole v6's API is session-based. If `pihole-FTL` restarts (e.g. after a
+DNS record change), Homepage's cached session becomes stale and its Pi-hole
+widget logs `Error calling Pi-Hole API: 401 ... Unauthorized`. Fix: `docker
+restart homepage` on `pve` to force re-authentication. Pi-hole's
+password/API itself is fine in this case — don't chase credential issues.
+
+### Open question: how does the GitOps push -> Semaphore trigger actually work?
+`docs/ARCHITECTURE.md` describes a "Forgejo webhook -> Semaphore" trigger,
+but as of 2026-06-14 the `homelab-ansible` repo has **zero webhooks
+configured** (`GET /api/v1/repos/homeserver-admin/homelab-ansible/hooks`
+returns `[]`). Builds still appear to run on push, so Semaphore must be
+triggering some other way (e.g. polling on a schedule, or a webhook on a
+different repo/path). Not yet confirmed — check Semaphore's Task Template
+"Build" trigger config next time this needs debugging.

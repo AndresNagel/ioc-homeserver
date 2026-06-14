@@ -105,3 +105,18 @@
     port: 22
     timeout: 60
   delegate_to: localhost
+
+# Unprivileged LXCs cannot use sys_time capabilities to change the hardware clock.
+# We disable internal NTP daemons here so they don't fight the Proxmox host clock
+# and clutter the logs with "Insufficient permissions" systemd errors.
+- name: Disable time sync daemons in LXC (Proxmox host manages time)
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+    masked: true
+  loop:
+    - systemd-timesyncd
+    - chronyd
+    - ntpd
+  failed_when: false

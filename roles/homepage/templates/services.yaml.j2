@@ -109,9 +109,9 @@
         description: DNS / ad-block
         widget:
           type: pihole
-          url: http://192.168.1.100
+          url: https://192.168.1.100  # Must be HTTPS for Pi-hole v6
           version: 6
-          key: {{ '{{HOMEPAGE_VAR_PIHOLE_KEY}}' }}
+          key: "{{ '{{HOMEPAGE_VAR_PIHOLE_KEY}}' }}"
           fields: ["queries", "blocked", "blocked_percent"]
 
     - Semaphore:
