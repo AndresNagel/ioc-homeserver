@@ -1,0 +1,58 @@
+---
+# roles/caddy/tasks/main.yml
+# Installs Caddy (with the caddy-dns/cloudflare plugin, via Caddy's official
+# build server) as a systemd service. Caddy terminates TLS for *.welpes.com
+# using Let's Encrypt DNS-01 challenges against Cloudflare — no inbound
+# ports need to be exposed to the internet.
+
+- name: Create caddy system user
+  user:
+    name: caddy
+    shell: /usr/sbin/nologin
+    home: /var/lib/caddy
+    create_home: true
+    system: true
+
+- name: Create caddy dirs
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: caddy
+    group: caddy
+    mode: '0750'
+  loop:
+    - /etc/caddy
+    - /var/lib/caddy
+
+- name: Download Caddy binary with Cloudflare DNS plugin
+  get_url:
+    url: "https://caddyserver.com/api/download?os=linux&arch=amd64&p=github.com/caddy-dns/cloudflare"
+    dest: /usr/local/bin/caddy
+    mode: '0755'
+    force: true
+  notify: Restart caddy
+
+- name: Template Caddyfile
+  template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+    owner: caddy
+    group: caddy
+    mode: '0640'
+  notify: Restart caddy
+
+- name: Install systemd service
+  template:
+    src: caddy.service.j2
+    dest: /etc/systemd/system/caddy.service
+    mode: '0600'
+  notify:
+    - Reload systemd
+    - Restart caddy
+
+- name: Enable and start Caddy
+  systemd:
+    name: caddy
+    enabled: true
+    state: started
+    daemon_reload: true

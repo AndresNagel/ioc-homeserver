@@ -162,3 +162,11 @@
         lxc_mounts:
           mp0: "/mnt/ssd2tb,mp=/data"
           mp1: "/mnt/ssd2tb/configs/bazarr,mp=/var/lib/bazarr"
+
+# --- Caddy ---
+# Reverse proxy / TLS terminator for *.welpes.com — no bind mounts.
+- name: Provision Caddy LXC
+  hosts: caddy
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc

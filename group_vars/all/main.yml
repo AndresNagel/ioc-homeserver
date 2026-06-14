@@ -25,6 +25,10 @@ proxmox_ssh_authorized_keys:
 # --- Timezone ---
 timezone: Europe/Madrid               # change to your TZ
 
+# --- Caddy (reverse proxy / TLS for *.welpes.com) ---
+# Used for Let's Encrypt expiry notices. caddy_cloudflare_api_token lives in vault.yml.
+caddy_acme_email: andres.nagel.im@gmail.com
+
 # --- App config data (survives container rebuilds) ---
 appdata_base: /opt/appdata
 

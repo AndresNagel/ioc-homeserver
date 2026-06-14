@@ -93,3 +93,10 @@ all:
           lxc_id: 112
           lxc_memory: 1024
           lxc_cores: 2
+
+        caddy:
+          ansible_host: 192.168.1.113
+          ansible_user: root
+          lxc_id: 113
+          lxc_memory: 512
+          lxc_cores: 1

@@ -1,0 +1,52 @@
+{
+    email {{ caddy_acme_email }}
+    acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+}
+
+homepage.welpes.com {
+    reverse_proxy 192.168.1.253:3000
+}
+
+jellyfin.welpes.com {
+    reverse_proxy 192.168.1.102:8096
+}
+
+navidrome.welpes.com {
+    reverse_proxy 192.168.1.106:4533
+}
+
+sonarr.welpes.com {
+    reverse_proxy 192.168.1.104:8989
+}
+
+radarr.welpes.com {
+    reverse_proxy 192.168.1.105:7878
+}
+
+lidarr.welpes.com {
+    reverse_proxy 192.168.1.101:8686
+}
+
+prowlarr.welpes.com {
+    reverse_proxy 192.168.1.110:9696
+}
+
+bazarr.welpes.com {
+    reverse_proxy 192.168.1.112:6767
+}
+
+transmission.welpes.com {
+    reverse_proxy 192.168.1.103:9091
+}
+
+pihole.welpes.com {
+    reverse_proxy 192.168.1.100:80
+}
+
+semaphore.welpes.com {
+    reverse_proxy 192.168.1.27:3000
+}
+
+forgejo.welpes.com {
+    reverse_proxy 192.168.1.28:3001
+}

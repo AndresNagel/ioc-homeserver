@@ -30,3 +30,19 @@ pihole_custom_dns:
   - { ip: "192.168.1.111", name: "flaresolverr.internal" }
   - { ip: "192.168.1.28",  name: "forgejo.internal" }
   - { ip: "192.168.1.112", name: "bazarr.internal" }
+
+  # *.welpes.com — resolved to the Caddy LXC, which terminates TLS with
+  # real Let's Encrypt certs (DNS-01 via Cloudflare) and reverse-proxies
+  # to each service. Only resolves on this LAN (Pi-hole only).
+  - { ip: "192.168.1.113", name: "homepage.welpes.com" }
+  - { ip: "192.168.1.113", name: "jellyfin.welpes.com" }
+  - { ip: "192.168.1.113", name: "navidrome.welpes.com" }
+  - { ip: "192.168.1.113", name: "sonarr.welpes.com" }
+  - { ip: "192.168.1.113", name: "radarr.welpes.com" }
+  - { ip: "192.168.1.113", name: "lidarr.welpes.com" }
+  - { ip: "192.168.1.113", name: "prowlarr.welpes.com" }
+  - { ip: "192.168.1.113", name: "bazarr.welpes.com" }
+  - { ip: "192.168.1.113", name: "transmission.welpes.com" }
+  - { ip: "192.168.1.113", name: "pihole.welpes.com" }
+  - { ip: "192.168.1.113", name: "semaphore.welpes.com" }
+  - { ip: "192.168.1.113", name: "forgejo.welpes.com" }

@@ -78,3 +78,8 @@
   hosts: bazarr
   roles:
     - bazarr
+
+- name: Configure Caddy
+  hosts: caddy
+  roles:
+    - caddy
