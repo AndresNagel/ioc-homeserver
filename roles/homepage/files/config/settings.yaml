@@ -13,3 +13,6 @@ layout:
   Infrastructure:
     style: row
     columns: 4
+  Tasks:
+    style: row
+    columns: 4
