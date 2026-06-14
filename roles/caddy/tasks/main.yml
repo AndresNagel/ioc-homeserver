@@ -41,6 +41,30 @@
     mode: '0640'
   notify: Restart caddy
 
+- name: Create LAN wiki dir
+  file:
+    path: /var/www/wiki
+    state: directory
+    owner: caddy
+    group: caddy
+    mode: '0755'
+
+- name: Install LAN wiki Docsify loader
+  copy:
+    src: wiki/index.html
+    dest: /var/www/wiki/index.html
+    owner: caddy
+    group: caddy
+    mode: '0644'
+
+- name: Generate LAN/network wiki page
+  template:
+    src: network.md.j2
+    dest: /var/www/wiki/README.md
+    owner: caddy
+    group: caddy
+    mode: '0644'
+
 - name: Install systemd service
   template:
     src: caddy.service.j2

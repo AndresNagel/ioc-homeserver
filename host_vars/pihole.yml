@@ -48,3 +48,4 @@ pihole_custom_dns:
   - { ip: "192.168.1.113", name: "semaphore.welpes.com" }
   - { ip: "192.168.1.113", name: "forgejo.welpes.com" }
   - { ip: "192.168.1.113", name: "jellyseerr.welpes.com" }
+  - { ip: "192.168.1.113", name: "wiki.welpes.com" }

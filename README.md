@@ -50,6 +50,12 @@ etc.) to make this yours.
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — how it's all laid out:
   host layout, the full component list (LXC IDs, IPs, ports), storage
   layout, the media pipeline, networking/DNS, and the GitOps setup.
+- **[docs/components/](docs/components/)** — one page per LXC (plus the
+  Proxmox host): IP, domains, base image/resources, and what's installed
+  inside.
+- **[wiki.welpes.com](https://wiki.welpes.com)** — a small, always-current
+  LAN/network page (hosts, IPs, DNS records), generated straight from
+  `inventory.yml` and `host_vars/pihole.yml` on every deploy.
 - **[docs/OPERATIONS.md](docs/OPERATIONS.md)** — day-to-day commands:
   redeploying a service, rebuilding a container, checking logs/status,
   adding DNS records, and bootstrapping a host from scratch.
