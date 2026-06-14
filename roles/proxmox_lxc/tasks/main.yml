@@ -25,6 +25,7 @@
     features:
       - nesting=1                                  # needed for Docker inside LXC
     state: present
+    update: true
   delegate_to: pve
 
 # Bind mount sources under /mnt/ssd2tb/configs/ pre-existed for the

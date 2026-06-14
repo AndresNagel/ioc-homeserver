@@ -33,7 +33,11 @@ all:
           ansible_host: 192.168.1.103
           ansible_user: root
           lxc_id: 103
-          lxc_memory: 512
+          # Bumped 512 -> 1024 after an OOM crash on 2026-06-15: socket
+          # buffers from peer-limit-global=200 plus dirty page cache from
+          # a large download queue exceeded 512MB and the kernel OOM-killer
+          # took out the whole container (transmission-daemon, then PID 1).
+          lxc_memory: 1024
           lxc_cores: 1
           backup_root: /var/lib/transmission-daemon/info
 
