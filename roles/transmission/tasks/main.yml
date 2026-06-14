@@ -58,3 +58,35 @@
     enabled: true
     state: started
     daemon_reload: true
+
+# rpc-host-whitelist-enabled defaults to true with an empty whitelist, which
+# rejects requests carrying a hostname Host header (e.g. via the Caddy
+# reverse proxy at transmission.welpes.com) with HTTP 421 "Misdirected
+# Request" — only numeric-IP Host headers are implicitly allowed. Add the
+# proxied hostname to the whitelist. transmission-daemon rewrites
+# settings.json from its in-memory config on shutdown, so it must be stopped
+# before editing and started after, or the edit gets clobbered on next restart.
+- name: Check if transmission.welpes.com is already in RPC host whitelist
+  command: grep -q transmission.welpes.com /var/lib/transmission-daemon/info/settings.json
+  register: transmission_host_whitelist
+  changed_when: false
+  failed_when: false
+
+- name: Stop transmission-daemon to edit RPC host whitelist
+  systemd:
+    name: transmission-daemon
+    state: stopped
+  when: transmission_host_whitelist.rc != 0
+
+- name: Add transmission.welpes.com to RPC host whitelist
+  replace:
+    path: /var/lib/transmission-daemon/info/settings.json
+    regexp: '"rpc-host-whitelist": "[^"]*"'
+    replace: '"rpc-host-whitelist": "transmission.welpes.com"'
+  when: transmission_host_whitelist.rc != 0
+
+- name: Start transmission-daemon
+  systemd:
+    name: transmission-daemon
+    state: started
+  when: transmission_host_whitelist.rc != 0
