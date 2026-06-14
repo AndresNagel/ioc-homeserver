@@ -170,3 +170,15 @@
   gather_facts: false
   roles:
     - role: proxmox_lxc
+
+# --- Jellyseerr ---
+# Media request UI for Jellyfin + Sonarr/Radarr. Built from source (Node.js),
+# so only its config/db (CONFIG_DIRECTORY) is bind-mounted — app code isn't.
+- name: Provision Jellyseerr LXC
+  hosts: jellyseerr
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb/configs/jellyseerr,mp=/var/lib/jellyseerr"

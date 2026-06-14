@@ -123,6 +123,14 @@ all:
           lxc_memory: 512
           lxc_cores: 1
 
+        jellyseerr:
+          ansible_host: 192.168.1.109
+          ansible_user: root
+          lxc_id: 109
+          lxc_memory: 2048
+          lxc_cores: 2
+          backup_root: /var/lib/jellyseerr
+
     # Hosts with persistent config/state worth backing up — see 3_backup.yml.
     # caddy and flaresolverr are excluded: stateless / fully templated.
     backup_targets:
@@ -138,3 +146,4 @@ all:
         semaphore: {}
         forgejo: {}
         bazarr: {}
+        jellyseerr: {}

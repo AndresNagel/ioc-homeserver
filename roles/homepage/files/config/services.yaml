@@ -5,6 +5,11 @@
         href: https://jellyfin.welpes.com
         description: Media server
 
+    - Jellyseerr:
+        icon: jellyseerr.png
+        href: https://jellyseerr.welpes.com
+        description: Media requests
+
     - Navidrome:
         icon: navidrome.png
         href: https://navidrome.welpes.com

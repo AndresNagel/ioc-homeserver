@@ -1,0 +1,11 @@
+---
+# roles/jellyseerr/handlers/main.yml
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: Restart jellyseerr
+  systemd:
+    name: jellyseerr
+    state: restarted

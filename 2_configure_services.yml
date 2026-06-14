@@ -89,3 +89,8 @@
   hosts: caddy
   roles:
     - caddy
+
+- name: Configure Jellyseerr
+  hosts: jellyseerr
+  roles:
+    - jellyseerr
