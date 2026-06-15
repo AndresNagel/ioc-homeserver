@@ -151,10 +151,11 @@ the host's Intel iGPU (`/dev/dri/renderD128`, VAAPI):
 - HTTPS is deferred until there's a real domain — everything is plain HTTP
   on the LAN today.
 
-### Planned: GL.iNet router + VLAN segmentation (not started)
+### Planned: GL.iNet router + VLAN segmentation (hardware ordered, arriving Mon Jun 22 2026)
 
-Idea is to replace the current router with a GL.iNet (OpenWrt, manageable via
-UCI/Ansible) and split the LAN into three networks:
+Chosen hardware: **GL.iNet GL-MT6000 (Flint 2)** — OpenWrt-based, UCI/Ansible
+manageable, 2x 2.5GbE ports. Plan is to replace the current router and split
+the LAN into three networks:
 
 - **Trusted** (`192.168.1.0/24`, untagged/native VLAN) — unchanged, all
   existing LXCs stay exactly as they are.
