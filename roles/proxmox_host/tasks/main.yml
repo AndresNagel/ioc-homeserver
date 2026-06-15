@@ -3,6 +3,31 @@
 # Prepares the Proxmox host SSD layout and optionally mounts a NAS via NFS.
 # Run via 0_prepare_host.yml — safe to re-run at any time.
 
+# --- Postfix aliases ---
+# Debian ships /etc/aliases but doesn't build its hash db, so postfix's
+# local mailer logs "open database /etc/aliases.db: No such file or
+# directory" on every delivery attempt (e.g. cron mail to root).
+- name: Generate postfix aliases database
+  command: newaliases
+  args:
+    creates: /etc/aliases.db
+
+# --- Apt repos ---
+# pve-enterprise.sources is enabled by default but 401s without a paid
+# subscription, breaking `apt-get update`. Disable it in favor of
+# pve-no-subscription (already enabled in pve-install-repo.list).
+- name: Disable pve-enterprise apt repo (no subscription)
+  copy:
+    dest: /etc/apt/sources.list.d/pve-enterprise.sources
+    content: |
+      Types: deb
+      URIs: https://enterprise.proxmox.com/debian/pve
+      Suites: trixie
+      Components: pve-enterprise
+      Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
+      Enabled: false
+    mode: '0644'
+
 # --- Create all media directories ---
 - name: Create media directory tree
   file:

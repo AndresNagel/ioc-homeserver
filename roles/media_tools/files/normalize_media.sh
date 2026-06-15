@@ -30,10 +30,13 @@ probe() {
   ffprobe -v error -show_entries stream=codec_type,height,channels -of json "$1" \
     | python3 -c '
 import json, sys
-d = json.load(sys.stdin)
+try:
+    streams = json.load(sys.stdin)["streams"]
+except (json.JSONDecodeError, KeyError):
+    sys.exit(1)
 height = "na"
 audio = []
-for s in d["streams"]:
+for s in streams:
     if s["codec_type"] == "video" and height == "na":
         height = str(s.get("height", "na"))
     elif s["codec_type"] == "audio":
@@ -47,7 +50,17 @@ for ch in audio:
 for dir in "${LIBRARY_DIRS[@]}"; do
   find "$dir" -type f \( -iname '*.mkv' -o -iname '*.mp4' \) -print0
 done | while IFS= read -r -d '' f; do
-  mapfile -t info < <(probe "$f")
+  if [ ! -f "$f" ]; then
+    logger -t "$LOG_TAG" "skipping '$f': file no longer exists"
+    continue
+  fi
+
+  if ! probe_out=$(probe "$f"); then
+    logger -t "$LOG_TAG" "skipping '$f': ffprobe failed"
+    continue
+  fi
+
+  mapfile -t info <<< "$probe_out"
   height="${info[0]}"
   audio_channels=("${info[@]:1}")
 
