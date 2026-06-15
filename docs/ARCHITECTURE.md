@@ -151,6 +151,25 @@ the host's Intel iGPU (`/dev/dri/renderD128`, VAAPI):
 - HTTPS is deferred until there's a real domain — everything is plain HTTP
   on the LAN today.
 
+### Planned: GL.iNet router + VLAN segmentation (not started)
+
+Idea is to replace the current router with a GL.iNet (OpenWrt, manageable via
+UCI/Ansible) and split the LAN into three networks:
+
+- **Trusted** (`192.168.1.0/24`, untagged/native VLAN) — unchanged, all
+  existing LXCs stay exactly as they are.
+- **Guest** (new VLAN, e.g. `192.168.20.0/24`) — DNS forced to
+  `8.8.8.8`/`8.8.4.4`, firewall allows `guest → wan` only.
+- **IoT** (new VLAN, e.g. `192.168.30.0/24`, for smart TVs etc.) — DNS =
+  pi-hole (`192.168.1.100`), firewall allows `iot → wan` plus two explicit
+  rules: `iot → 192.168.1.100:53` (DNS) and `iot → 192.168.1.102:8096`
+  (Jellyfin direct, not via Caddy — avoids exposing every `*.welpes.com`
+  vhost to IoT devices).
+
+GL.iNet's LAN port trunks VLAN 1 (native) + 20 + 30 to a VLAN-aware switch,
+with separate SSIDs per VLAN. Once the hardware is bought, this becomes a new
+`roles/openwrt_router` with templated UCI config.
+
 ---
 
 ## GitOps loop (Forgejo → Semaphore → GitHub)
