@@ -37,8 +37,13 @@ all:
           # buffers from peer-limit-global=200 plus dirty page cache from
           # a large download queue exceeded 512MB and the kernel OOM-killer
           # took out the whole container (transmission-daemon, then PID 1).
-          lxc_memory: 1024
-          lxc_cores: 1
+          # Bumped again 1024 -> 2048 / cores 1 -> 2 same day: even at 1024MB
+          # the container sat with ~8MB free + 93MB swapped under normal
+          # multi-torrent load, and a single core saturated by peer traffic
+          # (20-40k interrupts/sec) was starving the RPC handler, making the
+          # web UI take ~10s to render.
+          lxc_memory: 2048
+          lxc_cores: 2
           backup_root: /var/lib/transmission-daemon/info
 
         sonarr:
