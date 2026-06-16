@@ -172,3 +172,22 @@
   when: >-
     (['podnapisi', 'subf2m', 'gestdown', 'subdl'] | difference(bazarr_settings.json.general.enabled_providers)) | length > 0
     or bazarr_settings.json.subdl.api_key != bazarr_subdl_api_key
+
+# Enable subtitle sync (ffsubsync) so downloaded subtitles are automatically
+# re-timed to match the actual audio. no_fix_framerate=false tells ffsubsync
+# to also detect and correct constant-ratio frame-rate drift (e.g. 23.976 vs
+# 25fps) — the most common cause of subtitles that start in sync but
+# gradually drift throughout the episode.
+- name: Enable Bazarr subtitle sync with frame-rate correction
+  uri:
+    url: "http://localhost:6767/api/system/settings?apikey={{ bazarr_api_key.stdout }}"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      settings-subsync-use_subsync: "true"
+      settings-subsync-no_fix_framerate: "false"
+    status_code: [200, 204]
+  no_log: true
+  when: >-
+    not bazarr_settings.json.subsync.use_subsync
+    or bazarr_settings.json.subsync.no_fix_framerate
