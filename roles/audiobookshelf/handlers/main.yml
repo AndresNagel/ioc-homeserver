@@ -1,0 +1,9 @@
+---
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: Restart audiobookshelf
+  systemd:
+    name: audiobookshelf
+    state: restarted

@@ -149,6 +149,34 @@
   roles:
     - role: proxmox_lxc
 
+# --- Audiobookshelf ---
+# Full /mnt/ssd2tb mounted at /data for audiobook/podcast library access;
+# config/metadata persists at /mnt/ssd2tb/configs/audiobookshelf
+- name: Provision Audiobookshelf LXC
+  hosts: audiobookshelf
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_disk: 4
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb,mp=/data"
+          mp1: "/mnt/ssd2tb/configs/audiobookshelf,mp=/var/lib/audiobookshelf"
+
+# --- Readarr ---
+# Full /mnt/ssd2tb mounted at /data so hardlinks work between
+# torrents/books and media/books (same filesystem)
+- name: Provision Readarr LXC
+  hosts: readarr
+  gather_facts: false
+  roles:
+    - role: proxmox_lxc
+      vars:
+        lxc_disk: 4
+        lxc_mounts:
+          mp0: "/mnt/ssd2tb,mp=/data"
+          mp1: "/mnt/ssd2tb/configs/readarr,mp=/var/lib/readarr"
+
 # --- Bazarr ---
 # Full /mnt/ssd2tb mounted at /data so Bazarr can read/write subtitles
 # alongside the series/movies libraries used by Sonarr and Radarr

@@ -116,6 +116,24 @@ all:
           lxc_memory: 1024
           lxc_cores: 1
 
+        readarr:
+          ansible_host: 192.168.1.114
+          ansible_user: root
+          lxc_id: 114
+          lxc_memory: 1024
+          lxc_cores: 2
+          backup_root: /var/lib/readarr
+          backup_excludes: [MediaCover, logs, Logs]
+
+        audiobookshelf:
+          ansible_host: 192.168.1.115
+          ansible_user: root
+          lxc_id: 115
+          lxc_memory: 2048
+          lxc_cores: 2
+          backup_root: /var/lib/audiobookshelf
+          backup_excludes: [metadata/cache, metadata/items]
+
         bazarr:
           ansible_host: 192.168.1.112
           ansible_user: root
@@ -154,5 +172,7 @@ all:
         navidrome: {}
         semaphore: {}
         forgejo: {}
+        readarr: {}
+        audiobookshelf: {}
         bazarr: {}
         jellyseerr: {}

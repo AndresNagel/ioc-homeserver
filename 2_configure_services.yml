@@ -55,6 +55,22 @@
     arr_port: 9696
     arr_api_version: v1
 
+- name: Configure Audiobookshelf
+  hosts: audiobookshelf
+  roles:
+    - audiobookshelf
+
+- name: Configure Readarr
+  hosts: readarr
+  roles:
+    - arr
+  vars:
+    arr_app: readarr
+    arr_port: 8787
+    arr_api_version: v1
+    # Readarr uses "develop" as its stable branch (no "master" release channel)
+    arr_download_url: "https://readarr.servarr.com/v1/update/develop/updatefile?os=linux&runtime=netcore&arch=x64"
+
 - name: Configure Jellyfin
   hosts: jellyfin
   roles:

@@ -31,6 +31,8 @@ pihole_custom_dns:
   - { ip: "192.168.1.108", name: "forgejo.internal" }
   - { ip: "192.168.1.112", name: "bazarr.internal" }
   - { ip: "192.168.1.109", name: "jellyseerr.internal" }
+  - { ip: "192.168.1.114", name: "readarr.internal" }
+  - { ip: "192.168.1.115", name: "audiobookshelf.internal" }
 
   # *.welpes.com — resolved to the Caddy LXC, which terminates TLS with
   # real Let's Encrypt certs (DNS-01 via Cloudflare) and reverse-proxies
@@ -48,4 +50,6 @@ pihole_custom_dns:
   - { ip: "192.168.1.113", name: "semaphore.welpes.com" }
   - { ip: "192.168.1.113", name: "forgejo.welpes.com" }
   - { ip: "192.168.1.113", name: "jellyseerr.welpes.com" }
+  - { ip: "192.168.1.113", name: "readarr.welpes.com" }
+  - { ip: "192.168.1.113", name: "audiobookshelf.welpes.com" }
   - { ip: "192.168.1.113", name: "wiki.welpes.com" }

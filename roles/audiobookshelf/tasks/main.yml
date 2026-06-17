@@ -1,0 +1,139 @@
+---
+# roles/audiobookshelf/tasks/main.yml
+# Builds Audiobookshelf from source — packagecloud apt repo is defunct and
+# they ship no release binaries; Docker is their only official dist channel.
+# We build directly (same approach as Jellyseerr):
+#   - Client (Nuxt 2): npm run generate → client/dist/
+#   - Server: npm ci --only=production → node index.js
+# The nunicode-sqlite library (unicode-aware SQLite full-text search) is
+# downloaded as a pre-built glibc x64 .so from its own GitHub releases.
+
+- name: Install build dependencies
+  apt:
+    name:
+      - git
+      - curl
+      - ca-certificates
+      - build-essential
+      - python3
+      - unzip
+    state: present
+    update_cache: true
+
+- name: Ensure apt keyrings directory exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add NodeSource apt key
+  shell: curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+  args:
+    creates: /etc/apt/keyrings/nodesource.gpg
+
+- name: Add NodeSource apt repo (Node.js 20.x)
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main"
+    state: present
+    filename: nodesource
+
+- name: Install Node.js
+  apt:
+    name: nodejs
+    state: present
+    update_cache: true
+
+- name: Check if nunicode-sqlite library is installed
+  stat:
+    path: /usr/local/lib/nusqlite3/libnusqlite3.so
+  register: nusqlite3_stat
+
+- name: Install nunicode-sqlite (glibc x64 build for Debian)
+  when: not nusqlite3_stat.stat.exists
+  block:
+    - name: Ensure nusqlite3 lib dir exists
+      file:
+        path: /usr/local/lib/nusqlite3
+        state: directory
+        mode: '0755'
+
+    - name: Download libnusqlite3-linux-x64.zip
+      get_url:
+        url: https://github.com/mikiher/nunicode-sqlite/releases/download/v1.2/libnusqlite3-linux-x64.zip
+        dest: /tmp/libnusqlite3.zip
+        mode: '0644'
+
+    - name: Extract libnusqlite3
+      unarchive:
+        src: /tmp/libnusqlite3.zip
+        dest: /usr/local/lib/nusqlite3
+        remote_src: true
+
+- name: Clone/update Audiobookshelf source
+  git:
+    repo: https://github.com/advplyr/audiobookshelf.git
+    dest: /opt/audiobookshelf
+    version: master
+  register: abs_src
+
+- name: Install client dependencies
+  command: npm ci
+  args:
+    chdir: /opt/audiobookshelf/client
+  when: abs_src.changed
+  notify: Restart audiobookshelf
+
+- name: Build client (nuxt generate → client/dist)
+  command: npm run generate
+  args:
+    chdir: /opt/audiobookshelf/client
+  when: abs_src.changed
+  notify: Restart audiobookshelf
+
+- name: Install server production dependencies
+  command: npm ci --only=production
+  args:
+    chdir: /opt/audiobookshelf
+  when: abs_src.changed
+  notify: Restart audiobookshelf
+
+- name: Ensure config directory exists
+  file:
+    path: /var/lib/audiobookshelf
+    state: directory
+    mode: '0755'
+
+- name: Install systemd service
+  copy:
+    dest: /etc/systemd/system/audiobookshelf.service
+    content: |
+      [Unit]
+      Description=Audiobookshelf
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=simple
+      WorkingDirectory=/opt/audiobookshelf
+      ExecStart=/usr/bin/node index.js
+      Environment=NODE_ENV=production
+      Environment=CONFIG_PATH=/var/lib/audiobookshelf
+      Environment=METADATA_PATH=/var/lib/audiobookshelf/metadata
+      Environment=PORT=13378
+      Environment=NUSQLITE3_PATH=/usr/local/lib/nusqlite3/libnusqlite3.so
+      Restart=on-failure
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart audiobookshelf
+
+- name: Enable and start audiobookshelf
+  systemd:
+    name: audiobookshelf
+    enabled: true
+    state: started
+    daemon_reload: true

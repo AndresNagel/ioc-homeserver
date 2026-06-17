@@ -6,6 +6,11 @@
 # secrets out of this file and out of `ansible --diff` output.
 
 - Media:
+    - Audiobookshelf:
+        icon: audiobookshelf.png
+        href: https://audiobookshelf.welpes.com
+        description: Audiobooks & podcasts
+
     - Jellyfin:
         icon: jellyfin.png
         href: https://jellyfin.welpes.com
@@ -55,6 +60,16 @@
           url: http://192.168.1.101:8686
           key: {{ '{{HOMEPAGE_VAR_LIDARR_KEY}}' }}
           fields: ["wanted", "queued", "artists"]
+
+    - Readarr:
+        icon: readarr.png
+        href: https://readarr.welpes.com
+        description: Book management
+        widget:
+          type: readarr
+          url: http://192.168.1.114:8787
+          key: {{ '{{HOMEPAGE_VAR_READARR_KEY}}' }}
+          fields: ["wanted", "queued", "books"]
 
     - Prowlarr:
         icon: prowlarr.png
