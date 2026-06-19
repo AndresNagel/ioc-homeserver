@@ -10,7 +10,7 @@
 #   ansible-playbook -i inventory.yml 4_homepage_widgets.yml --vault-password-file .vault_pass
 
 - name: Gather arr-suite API keys
-  hosts: sonarr:radarr:lidarr:prowlarr:readarr
+  hosts: sonarr:radarr:lidarr:prowlarr
   gather_facts: false
   tasks:
     - name: Read API key from config.xml
