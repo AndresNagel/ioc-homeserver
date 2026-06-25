@@ -1,8 +1,8 @@
 ---
 - openmeteo:
-    label: Wellington
-    latitude: -41.2865
-    longitude: 174.7762
+    label: Wainuiomata
+    latitude: -41.2667
+    longitude: 174.9500
     timezone: Pacific/Auckland
     units: metric
     cache: 5
