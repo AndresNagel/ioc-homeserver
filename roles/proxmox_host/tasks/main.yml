@@ -12,6 +12,13 @@
   args:
     creates: /etc/aliases.db
 
+# --- Python deps for Ansible's proxmox_kvm/proxmox modules ---
+- name: Install python3-proxmoxer (required by proxmox_kvm module)
+  apt:
+    name: python3-proxmoxer
+    state: present
+    update_cache: false
+
 # --- Apt repos ---
 # pve-enterprise.sources is enabled by default but 401s without a paid
 # subscription, breaking `apt-get update`. Disable it in favor of
