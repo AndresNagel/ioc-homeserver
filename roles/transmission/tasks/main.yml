@@ -90,3 +90,36 @@
     name: transmission-daemon
     state: started
   when: transmission_host_whitelist.rc != 0
+
+# download-dir was left pointing at the music subfolder from when this box
+# only handled music torrents. Sonarr/Radarr/Lidarr each pass a *relative*
+# category (tv-sonarr/radarr/lidarr, no absolute directory override), so
+# Transmission creates those categories as children of download-dir - which
+# put every Sonarr/Radarr download under torrents/music/{category}/ instead
+# of as top-level siblings of music, and left the real torrents/movies
+# category permanently empty. Only affects newly-added torrents going
+# forward; existing ones keep whatever downloadDir they were already given.
+- name: Check if download-dir already points at the torrents root
+  command: "grep -q '\"download-dir\": \"/data/torrents\"' /var/lib/transmission-daemon/info/settings.json"
+  register: transmission_download_dir
+  changed_when: false
+  failed_when: false
+
+- name: Stop transmission-daemon to fix download-dir
+  systemd:
+    name: transmission-daemon
+    state: stopped
+  when: transmission_download_dir.rc != 0
+
+- name: Point download-dir at the torrents root, not the music subfolder
+  replace:
+    path: /var/lib/transmission-daemon/info/settings.json
+    regexp: '"download-dir": "[^"]*"'
+    replace: '"download-dir": "/data/torrents"'
+  when: transmission_download_dir.rc != 0
+
+- name: Start transmission-daemon (download-dir fix)
+  systemd:
+    name: transmission-daemon
+    state: started
+  when: transmission_download_dir.rc != 0
