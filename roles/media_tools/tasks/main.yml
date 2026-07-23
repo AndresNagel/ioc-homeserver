@@ -2,8 +2,9 @@
 # roles/media_tools/tasks/main.yml
 # Media maintenance tooling on the Proxmox host (runs against /mnt/ssd2tb
 # directly — no LXC needed). Currently: BDMV concert -> chaptered MKV remux,
-# a follow-up HEVC compression pass for WiFi-friendly streaming, and a daily
-# pass normalizing the movies/series libraries to 1080p HEVC + stereo AAC.
+# a manual on-demand equivalent for DVD-Video concert rips, a follow-up
+# HEVC compression pass for WiFi-friendly streaming, and a daily pass
+# normalizing the movies/series libraries to 1080p HEVC + stereo AAC.
 
 - name: Install mkvtoolnix, ffmpeg and Intel VAAPI driver (for QuickSync)
   apt:
@@ -32,6 +33,12 @@
     enabled: true
     state: started
     daemon_reload: true
+
+- name: Deploy remux_dvd_concert.sh
+  copy:
+    src: remux_dvd_concert.sh
+    dest: /usr/local/bin/remux_dvd_concert.sh
+    mode: '0755'
 
 - name: Deploy compress_concerts.sh
   copy:
