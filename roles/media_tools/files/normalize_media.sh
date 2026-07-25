@@ -127,31 +127,27 @@ done
 
 # See project memory: /mnt/ssd2tb sits on a drive with recurring
 # emergency_ro faults that ssd2tb-autorecover.timer (roles/proxmox_host)
-# detects and clears, typically within ~1 minute. A write failing here
-# because the fs just went read-only out from under us is a transient,
-# recoverable condition - not the same as a genuine ffmpeg failure (bad
-# input, unsupported codec, etc.) which should just be skipped. These
-# helpers tell the two apart so one disk blip doesn't abort the whole
-# night's run (set -e means an unguarded failure here kills the script,
-# not just the current file - happened for real on 2026-07-25).
+# detects and clears, typically within ~1 minute - but only once nothing on
+# the host still has the mount open. A write failing here because the fs
+# just went read-only out from under us is a transient, recoverable
+# condition - not the same as a genuine ffmpeg failure (bad input,
+# unsupported codec, etc.) which should just be skipped - so this tells the
+# two apart and stops the whole run immediately on the former rather than
+# cascading the same failure through the rest of the library.
+#
+# Deliberately does NOT wait/retry in place: an earlier version did, and on
+# 2026-07-26 that backfired for real - staying alive kept the upstream
+# `find` (its stdout feeds this file's while-read loop) holding an open fd
+# under /mnt/ssd2tb, which made autorecover's own `umount` fail with
+# "target is busy" and pushed recovery from ~1 minute out to 6+. Returning
+# immediately lets this whole pipeline (including `find`) exit within
+# seconds, so autorecover's next 2-minute tick finds the mount actually
+# free. Any files left un-normalized just get picked up by the next
+# scheduled/on-demand run.
 mount_is_healthy() {
   local opts
   opts=$(findmnt -no OPTIONS "$SSD2TB_MOUNT" 2>/dev/null) || return 1
   [[ ",$opts," == *,rw,* && "$opts" != *emergency_ro* ]]
-}
-
-wait_for_ssd2tb_recovery() {
-  local waited=0
-  local timeout=360 # 3x the autorecover timer's 2min poll interval
-  while ! mount_is_healthy; do
-    if [ "$waited" -ge "$timeout" ]; then
-      return 1
-    fi
-    logger -t "$LOG_TAG" "ssd2tb not healthy (unmounted or emergency_ro), waiting for ssd2tb-autorecover.timer (${waited}s/${timeout}s)"
-    sleep 15
-    waited=$((waited + 15))
-  done
-  return 0
 }
 
 for dir in "${LIBRARY_DIRS[@]}"; do
@@ -231,7 +227,8 @@ done | while IFS= read -r -d '' f; do
   }
 
   # 0 = wrote successfully, 1 = genuine failure (skip, move on), 2 = ssd2tb
-  # stayed unhealthy after waiting for autorecover (stop the whole run).
+  # is unhealthy (stop the whole run immediately - see mount_is_healthy's
+  # comment for why this must NOT wait/retry in place).
   attempt_normalize() {
     if try_write_once; then
       [ "$old_nlink" -gt 1 ] && cleanup_orphaned_original "$old_inode"
@@ -243,19 +240,8 @@ done | while IFS= read -r -d '' f; do
       return 1
     fi
 
-    logger -t "$LOG_TAG" "'$f': write failed and ssd2tb is unhealthy - waiting for ssd2tb-autorecover.timer"
-    if ! wait_for_ssd2tb_recovery; then
-      logger -t "$LOG_TAG" "'$f': ssd2tb still unhealthy after waiting, stopping run for tonight"
-      return 2
-    fi
-
-    logger -t "$LOG_TAG" "ssd2tb recovered, retrying '$f'"
-    if try_write_once; then
-      [ "$old_nlink" -gt 1 ] && cleanup_orphaned_original "$old_inode"
-      return 0
-    fi
-    rm -f "$tmp_out"
-    return 1
+    logger -t "$LOG_TAG" "'$f': write failed and ssd2tb is unhealthy - stopping run for tonight (ssd2tb-autorecover.timer will fix it)"
+    return 2
   }
 
   logger -t "$LOG_TAG" "normalizing '$f' (height=$height video=$needs_video audio=$needs_audio)"
