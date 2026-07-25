@@ -28,7 +28,16 @@ LIBRARY_DIRS=(
   "/mnt/ssd2tb/media/movies"
   "/mnt/ssd2tb/series"
 )
+# A single backlog pass (e.g. after this script was stuck for days) can run
+# for many hours - long enough to spill past the night window it started in
+# and collide with evening viewing. Stop cleanly once we cross into morning;
+# next night's run picks up wherever this one left off.
+# Overridable via env for an on-demand manual run outside the night window
+# (e.g. NIGHT_START_HOUR=0 NIGHT_END_HOUR=24 to disable the guard entirely).
+NIGHT_START_HOUR="${NIGHT_START_HOUR:-1}"
+NIGHT_END_HOUR="${NIGHT_END_HOUR:-7}"
 TORRENTS_DIR="/mnt/ssd2tb/torrents"
+SSD2TB_MOUNT="/mnt/ssd2tb"
 TRANSMISSION_RPC="http://192.168.1.103:9091/transmission/rpc"
 VAAPI_DEVICE="/dev/dri/renderD128"
 VIDEO_BITRATE="9M"
@@ -106,9 +115,54 @@ cleanup_orphaned_original() {
   done < <(find "$TORRENTS_DIR" -xdev -inum "$inode" -print0 2>/dev/null)
 }
 
+# A prior run that was killed mid-encode (e.g. the disk itself timing out
+# mid-write) can leave its "$f.normalize.tmp.$ext" behind. That name still
+# matches the *.mkv/*.mp4 glob below, so a later run would probe the
+# corrupt partial file as if it were a real library file. Clear any of
+# these out first rather than let them show up as spurious ffprobe-failed
+# skips every run.
 for dir in "${LIBRARY_DIRS[@]}"; do
-  find "$dir" -type f \( -iname '*.mkv' -o -iname '*.mp4' \) -print0
+  find "$dir" -type f -iname '*.normalize.tmp.*' -delete
+done
+
+# See project memory: /mnt/ssd2tb sits on a drive with recurring
+# emergency_ro faults that ssd2tb-autorecover.timer (roles/proxmox_host)
+# detects and clears, typically within ~1 minute. A write failing here
+# because the fs just went read-only out from under us is a transient,
+# recoverable condition - not the same as a genuine ffmpeg failure (bad
+# input, unsupported codec, etc.) which should just be skipped. These
+# helpers tell the two apart so one disk blip doesn't abort the whole
+# night's run (set -e means an unguarded failure here kills the script,
+# not just the current file - happened for real on 2026-07-25).
+mount_is_healthy() {
+  local opts
+  opts=$(findmnt -no OPTIONS "$SSD2TB_MOUNT" 2>/dev/null) || return 1
+  [[ ",$opts," == *,rw,* && "$opts" != *emergency_ro* ]]
+}
+
+wait_for_ssd2tb_recovery() {
+  local waited=0
+  local timeout=360 # 3x the autorecover timer's 2min poll interval
+  while ! mount_is_healthy; do
+    if [ "$waited" -ge "$timeout" ]; then
+      return 1
+    fi
+    logger -t "$LOG_TAG" "ssd2tb not healthy (unmounted or emergency_ro), waiting for ssd2tb-autorecover.timer (${waited}s/${timeout}s)"
+    sleep 15
+    waited=$((waited + 15))
+  done
+  return 0
+}
+
+for dir in "${LIBRARY_DIRS[@]}"; do
+  find "$dir" -type f \( -iname '*.mkv' -o -iname '*.mp4' \) ! -iname '*.normalize.tmp.*' -print0
 done | while IFS= read -r -d '' f; do
+  hour="$(date +%H)"
+  if [ "$((10#$hour))" -lt "$NIGHT_START_HOUR" ] || [ "$((10#$hour))" -ge "$NIGHT_END_HOUR" ]; then
+    logger -t "$LOG_TAG" "outside night window (${NIGHT_START_HOUR}:00-${NIGHT_END_HOUR}:00), stopping for tonight"
+    break
+  fi
+
   if [ ! -f "$f" ]; then
     logger -t "$LOG_TAG" "skipping '$f': file no longer exists"
     continue
@@ -164,22 +218,52 @@ done | while IFS= read -r -d '' f; do
   old_inode=$(stat -c %i "$f")
   old_nlink=$(stat -c %h "$f")
 
-  logger -t "$LOG_TAG" "normalizing '$f' (height=$height video=$needs_video audio=$needs_audio)"
-  if ffmpeg -hide_banner -loglevel warning -y \
-      "${hwaccel_args[@]}" \
-      -i "$f" \
-      "${map_args[@]}" \
-      -c copy \
-      "${video_args[@]}" \
-      "${audio_args[@]}" \
-      "${fmt_args[@]}" \
-      "$tmp_out"; then
-    mv "$tmp_out" "$f"
-    if [ "$old_nlink" -gt 1 ]; then
-      cleanup_orphaned_original "$old_inode"
+  try_write_once() {
+    ffmpeg -hide_banner -loglevel warning -y -nostdin \
+        "${hwaccel_args[@]}" \
+        -i "$f" \
+        "${map_args[@]}" \
+        -c copy \
+        "${video_args[@]}" \
+        "${audio_args[@]}" \
+        "${fmt_args[@]}" \
+        "$tmp_out" && mv "$tmp_out" "$f"
+  }
+
+  # 0 = wrote successfully, 1 = genuine failure (skip, move on), 2 = ssd2tb
+  # stayed unhealthy after waiting for autorecover (stop the whole run).
+  attempt_normalize() {
+    if try_write_once; then
+      [ "$old_nlink" -gt 1 ] && cleanup_orphaned_original "$old_inode"
+      return 0
     fi
-  else
-    logger -t "$LOG_TAG" "FAILED: '$f'"
     rm -f "$tmp_out"
+
+    if mount_is_healthy; then
+      return 1
+    fi
+
+    logger -t "$LOG_TAG" "'$f': write failed and ssd2tb is unhealthy - waiting for ssd2tb-autorecover.timer"
+    if ! wait_for_ssd2tb_recovery; then
+      logger -t "$LOG_TAG" "'$f': ssd2tb still unhealthy after waiting, stopping run for tonight"
+      return 2
+    fi
+
+    logger -t "$LOG_TAG" "ssd2tb recovered, retrying '$f'"
+    if try_write_once; then
+      [ "$old_nlink" -gt 1 ] && cleanup_orphaned_original "$old_inode"
+      return 0
+    fi
+    rm -f "$tmp_out"
+    return 1
+  }
+
+  logger -t "$LOG_TAG" "normalizing '$f' (height=$height video=$needs_video audio=$needs_audio)"
+  rc=0
+  attempt_normalize || rc=$?
+  if [ "$rc" -eq 1 ]; then
+    logger -t "$LOG_TAG" "FAILED: '$f'"
+  elif [ "$rc" -eq 2 ]; then
+    break
   fi
 done
