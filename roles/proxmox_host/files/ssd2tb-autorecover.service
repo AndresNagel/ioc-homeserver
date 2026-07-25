@@ -1,0 +1,6 @@
+[Unit]
+Description=Detect and auto-recover ssd2tb emergency_ro (SATA CRC/timeout fault)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ssd2tb_autorecover.sh

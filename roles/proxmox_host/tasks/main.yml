@@ -89,3 +89,131 @@
   when: not nfs_enabled | bool
   # This is a no-op if it was never mounted — safe to run always
   ignore_errors: true
+
+# --- I/O scheduler for the media SSD ---
+# mq-deadline (the default) doesn't honor per-process IO priority at all, so
+# the IOSchedulingClass=idle already set on normalize-media/compress-concerts
+# (roles/media_tools) was a silent no-op: those jobs' disk writes fully
+# compete with Jellyfin's reads of the same /mnt/ssd2tb disk, causing
+# playback stalls whenever a maintenance job runs during viewing. bfq does
+# honor IO priority classes, so switching to it makes that existing "idle"
+# setting actually take effect. Scoped to this specific disk by serial (the
+# Crucial BX500 backing /mnt/ssd2tb) so the host's NVMe boot drive is untouched.
+- name: Load bfq IO scheduler module at boot
+  copy:
+    dest: /etc/modules-load.d/bfq.conf
+    content: "bfq\n"
+    mode: '0644'
+
+- name: Load bfq IO scheduler module now
+  community.general.modprobe:
+    name: bfq
+    state: present
+
+- name: Set bfq as the IO scheduler for the media SSD (persists via udev)
+  copy:
+    dest: /etc/udev/rules.d/90-media-ssd-scheduler.rules
+    # A plain ATTR{queue/scheduler}="bfq" assignment here doesn't reliably
+    # apply on this system even after a rules reload + explicit retrigger -
+    # RUN+= writing the sysfs file directly does, so use that instead.
+    content: |
+      ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="sda", ENV{ID_SERIAL}=="CT2000BX500SSD1_2442E9909666", RUN+="/bin/sh -c 'echo bfq > /sys/block/%k/queue/scheduler'"
+    mode: '0644'
+  register: media_ssd_scheduler_rule
+
+- name: Apply udev rules now
+  command: udevadm control --reload-rules
+  when: media_ssd_scheduler_rule.changed
+
+- name: Trigger udev to apply the new scheduler immediately
+  command: udevadm trigger --action=change --name-match=/dev/sda
+  when: media_ssd_scheduler_rule.changed
+
+- name: Verify bfq is active on the media SSD
+  command: cat /sys/block/sda/queue/scheduler
+  register: media_ssd_scheduler_check
+  changed_when: false
+  failed_when: "'[bfq]' not in media_ssd_scheduler_check.stdout"
+
+# --- Force a lower SATA link speed for the marginal media SSD ---
+# sda (ata1, the Crucial BX500 backing /mnt/ssd2tb) has thrown recurring
+# UDMA CRC errors / DID_TIME_OUT resets / forced emergency_ro remounts (6
+# events 2026-07-07 through 2026-07-24) at its negotiated 6.0 Gbps link
+# speed, despite SMART reporting the drive itself as healthy throughout
+# (0 reallocated/pending sectors). Link power management was already at
+# max_performance so that wasn't the lever. Capping the link to 3.0 Gbps
+# trades peak throughput (still far above what LAN streaming/transcoding
+# needs) for signal margin on whatever is marginal in this mini PC's
+# direct-plug drive bay connector. Scoped to port 1 (ata1, the physical
+# port this drive sits in) so ata2 is unaffected.
+# Requires a reboot to take effect - this task only stages the grub config.
+- name: Force ata1 (media SSD) to 3.0 Gbps link speed via GRUB
+  # Value must be the full "3.0Gbps" string, not the "3.0G" shortcut - per
+  # kernel-parameters.txt only "1.5G" is documented as an unambiguous
+  # shortcut. ID must be port-only ("1:"), NOT "1.00:" - per
+  # libata-core.c's ata_force_link_limits(), device number 0 in the id
+  # selects the first PMP fan-out link, not the plain host link a normal
+  # directly-attached SATA drive uses (that's device/linkno 15). "1.00:..."
+  # silently never matched our drive and had zero effect on two reboots
+  # (SControl stayed 0x300 / negotiated speed stayed 6.0 Gbps both times).
+  # Port-only form (device omitted -> -1) matches host link + everything
+  # behind the port, which is what we actually want here.
+  lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet libata.force=1:3.0Gbps"'
+    backup: true
+  register: grub_libata_force
+
+- name: Regenerate GRUB config
+  command: update-grub
+  when: grub_libata_force.changed
+
+- name: Warn that a reboot is required for the link speed cap to take effect
+  debug:
+    msg: >-
+      GRUB updated with libata.force=1:3.0Gbps but this only takes effect
+      after the next reboot of pve. Reboot manually when convenient -
+      this task does not reboot the host automatically.
+  when: grub_libata_force.changed
+
+# --- Unattended recovery for the ssd2tb emergency_ro fault ---
+# The manual recovery procedure (stop the 10 dependent LXCs + the homepage
+# docker container, umount, fsck, remount, restart nfs/pvestatd, bring
+# everything back up) has been run by hand after 6 emergency_ro incidents
+# 2026-07-07 through 2026-07-24. This automates that same procedure so a
+# future recurrence is a brief self-healing blip instead of an outage that
+# sits broken until someone notices. It does NOT fix the underlying SATA
+# fault (see the libata.force change above for that) - it only shortens
+# recovery time. If fsck comes back with anything worse than "corrected
+# cleanly" it deliberately stops and leaves things down for manual review
+# rather than guessing.
+- name: Deploy ssd2tb emergency_ro auto-recovery script
+  copy:
+    src: ssd2tb_autorecover.sh
+    dest: /usr/local/bin/ssd2tb_autorecover.sh
+    mode: '0755'
+
+- name: Deploy ssd2tb-autorecover systemd service
+  copy:
+    src: ssd2tb-autorecover.service
+    dest: /etc/systemd/system/ssd2tb-autorecover.service
+
+- name: Deploy ssd2tb-autorecover systemd timer
+  copy:
+    src: ssd2tb-autorecover.timer
+    dest: /etc/systemd/system/ssd2tb-autorecover.timer
+  register: ssd2tb_autorecover_timer
+
+- name: Enable and start ssd2tb-autorecover timer
+  systemd:
+    name: ssd2tb-autorecover.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Restart ssd2tb-autorecover timer to pick up schedule changes
+  systemd:
+    name: ssd2tb-autorecover.timer
+    state: restarted
+  when: ssd2tb_autorecover_timer.changed
