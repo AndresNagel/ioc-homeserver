@@ -5,7 +5,7 @@
 | **Type** | Bare-metal hypervisor (not an LXC) |
 | **IP** | 192.168.1.253 |
 | **Internal DNS** | `proxmox.internal` |
-| **Web UI** | https://192.168.1.253:8006 (self-signed cert) |
+| **Web UI** | https://proxmox.welpes.com (via Caddy) / https://192.168.1.253:8006 (self-signed cert) |
 | **Ansible role(s)** | `proxmox_host`, `media_tools`, `homepage`, `backup` |
 | **Inventory group** | `proxmox_host` |
 

@@ -54,7 +54,7 @@
 - Infrastructure:
     - Proxmox:
         icon: proxmox.png
-        href: https://192.168.1.253:8006
+        href: https://proxmox.welpes.com
         description: Hypervisor
 
     - Pi-hole:

@@ -39,6 +39,7 @@ certificate, without exposing anything to the internet — Pi-hole resolves
 | Domain | Upstream |
 |---|---|
 | homepage.welpes.com | 192.168.1.253:3000 (Homepage, on pve) |
+| proxmox.welpes.com | 192.168.1.253:8006 (self-signed upstream, `tls_insecure_skip_verify`) |
 | jellyfin.welpes.com | 192.168.1.102:8096 |
 | navidrome.welpes.com | 192.168.1.106:4533 |
 | sonarr.welpes.com | 192.168.1.104:8989 |
