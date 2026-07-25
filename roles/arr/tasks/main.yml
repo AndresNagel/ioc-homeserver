@@ -95,3 +95,16 @@
     status_code: [200, 202]
   no_log: true
   when: arr_host_config.json.username != 'admin'
+
+# WEB-DL/WEBRip releases essentially never carry image-based (PGS/VobSub)
+# subtitle tracks the way Bluray/Remux rips do, and those tracks are what
+# forces Jellyfin into a full burn-in transcode instead of direct play.
+# Re-rank WEB above Bluray/Remux at each resolution so it's preferred when
+# both are available - see files/prefer_webdl.py for details. Only applies
+# to Radarr/Sonarr (Prowlarr has no quality profiles).
+- name: Prefer WEB-DL/WEBRip over Bluray/Remux in quality profiles
+  script: "prefer_webdl.py {{ arr_port }} {{ arr_api_key.stdout }}"
+  register: prefer_webdl
+  changed_when: "'changed' in prefer_webdl.stdout"
+  no_log: true
+  when: arr_app in ['radarr', 'sonarr']

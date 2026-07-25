@@ -191,3 +191,26 @@
   when: >-
     not bazarr_settings.json.subsync.use_subsync
     or bazarr_settings.json.subsync.no_fix_framerate
+
+# By default Bazarr counts an embedded PGS/VobSub (image-based) subtitle
+# track as satisfying that language's requirement, so it never fetches a
+# real text subtitle for older BluRay/DVD rips that only carry bitmap subs.
+# Jellyfin can't send those to a client as a soft-subtitle track (most
+# clients can't render bitmap overlays themselves), so it burns them into
+# the video via a full transcode instead of direct-playing - expensive CPU
+# work that a text-based SRT would avoid entirely. Ignoring these formats
+# makes Bazarr search/download a text subtitle even when a PGS/VobSub track
+# already exists.
+- name: Ignore embedded PGS/VobSub subtitles so Bazarr still fetches text subs
+  uri:
+    url: "http://localhost:6767/api/system/settings?apikey={{ bazarr_api_key.stdout }}"
+    method: POST
+    body_format: form-urlencoded
+    body:
+      settings-general-ignore_pgs_subs: "true"
+      settings-general-ignore_vobsub_subs: "true"
+    status_code: [200, 204]
+  no_log: true
+  when: >-
+    not bazarr_settings.json.general.ignore_pgs_subs
+    or not bazarr_settings.json.general.ignore_vobsub_subs

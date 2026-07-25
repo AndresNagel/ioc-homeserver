@@ -100,3 +100,45 @@
     name: jellyfin
     state: restarted
   when: encoding_xml.changed or encoding_codecs.changed or encoding_transcode_path.changed
+
+# RememberSubtitleSelections defaults on, which silently re-applies a user's
+# last-picked subtitle track on the next playback of the same title - so
+# turning subtitles off for one session doesn't stick. For a file whose only
+# subtitle option is an image-based (PGS/VobSub) track, that means every
+# replay re-triggers a burn-in transcode even though the user chose "none"
+# last time. Disable it so "none" actually stays "none".
+- name: Wait for Jellyfin API to be ready
+  uri:
+    url: "http://localhost:8096/System/Ping"
+    status_code: 200
+  register: jellyfin_ping
+  until: jellyfin_ping.status == 200
+  retries: 15
+  delay: 2
+
+- name: Authenticate to Jellyfin as admin
+  uri:
+    url: "http://localhost:8096/Users/AuthenticateByName"
+    method: POST
+    headers:
+      Content-Type: application/json
+      X-Emby-Authorization: 'MediaBrowser Client="ansible", Device="ansible", DeviceId="ansible", Version="1"'
+    body_format: json
+    body:
+      Username: admin
+      Pw: admin
+    return_content: true
+  register: jellyfin_auth
+  no_log: true
+
+- name: Disable "remember subtitle selections" for admin
+  uri:
+    url: "http://localhost:8096/Users/{{ jellyfin_auth.json.User.Id }}/Configuration"
+    method: POST
+    headers:
+      X-Emby-Authorization: 'MediaBrowser Client="ansible", Device="ansible", DeviceId="ansible", Version="1", Token="{{ jellyfin_auth.json.AccessToken }}"'
+    body_format: json
+    body: "{{ jellyfin_auth.json.User.Configuration | combine({'RememberSubtitleSelections': false}) }}"
+    status_code: [200, 204]
+  no_log: true
+  when: jellyfin_auth.json.User.Configuration.RememberSubtitleSelections | default(false)
