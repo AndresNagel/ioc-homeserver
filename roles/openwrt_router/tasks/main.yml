@@ -1,0 +1,198 @@
+---
+# roles/openwrt_router/tasks/main.yml
+# Configures GL.iNet GL-MT6000 (Flint 2) via UCI (no Python required — uses
+# gekmihesg.openwrt connection plugin over SSH).
+#
+# Run order matters: network → dhcp → firewall → commit each config.
+# A full 'reload_config' at the end applies everything atomically.
+
+# ── Network: bridge VLANs ─────────────────────────────────────────────────────
+# Adds VLAN 20 (guest) and VLAN 30 (iot) as tagged on the trunk port.
+# VLAN 1 (trusted) already exists as the native untagged LAN — not touched here.
+
+- name: bridge-vlan guest (VLAN {{ router_guest_vlan }})
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: "network.@bridge-vlan[?vlan={{ router_guest_vlan }}]"
+    value:
+      device: br-lan
+      vlan: "{{ router_guest_vlan }}"
+      ports: "{{ router_lan_trunk_port }}:t"
+  notify: Commit network
+
+- name: bridge-vlan iot (VLAN {{ router_iot_vlan }})
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: "network.@bridge-vlan[?vlan={{ router_iot_vlan }}]"
+    value:
+      device: br-lan
+      vlan: "{{ router_iot_vlan }}"
+      ports: "{{ router_lan_trunk_port }}:t"
+  notify: Commit network
+
+# ── Network: logical interfaces ───────────────────────────────────────────────
+
+- name: network interface guest
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: network.guest
+    value:
+      proto: static
+      device: "br-lan.{{ router_guest_vlan }}"
+      ipaddr: "{{ router_guest_ip }}"
+      netmask: "{{ router_guest_netmask }}"
+  notify: Commit network
+
+- name: network interface iot
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: network.iot
+    value:
+      proto: static
+      device: "br-lan.{{ router_iot_vlan }}"
+      ipaddr: "{{ router_iot_ip }}"
+      netmask: "{{ router_iot_netmask }}"
+  notify: Commit network
+
+# ── DHCP ──────────────────────────────────────────────────────────────────────
+# Guest: DNS forced to Google (8.8.8.8/8.8.4.4) via DHCP option 6.
+# IoT:   DNS points to Pi-hole (192.168.1.100) — lets Pi-hole block ads for TVs.
+
+- name: DHCP pool guest
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: dhcp.guest
+    value:
+      interface: guest
+      start: "{{ router_guest_dhcp_start }}"
+      limit: "{{ router_guest_dhcp_limit }}"
+      leasetime: 12h
+  notify: Commit dhcp
+
+- name: DHCP guest force DNS
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: dhcp.guest.dhcp_option
+    value: "6,{{ router_guest_dns | join(',') }}"
+  notify: Commit dhcp
+
+- name: DHCP pool iot
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: dhcp.iot
+    value:
+      interface: iot
+      start: "{{ router_iot_dhcp_start }}"
+      limit: "{{ router_iot_dhcp_limit }}"
+      leasetime: 12h
+  notify: Commit dhcp
+
+- name: DHCP iot DNS (Pi-hole)
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: dhcp.iot.dhcp_option
+    value: "6,{{ pihole_ip }}"
+  notify: Commit dhcp
+
+# ── Firewall: zones ───────────────────────────────────────────────────────────
+# guest: outbound only (wan). input=DROP blocks anything trying to reach the router.
+# iot:   same policy. iptables rules below open the two specific holes.
+
+- name: firewall zone guest
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: firewall.guest
+    value:
+      name: guest
+      network: guest
+      input: DROP
+      output: ACCEPT
+      forward: DROP
+  notify: Commit firewall
+
+- name: firewall zone iot
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: firewall.iot
+    value:
+      name: iot
+      network: iot
+      input: DROP
+      output: ACCEPT
+      forward: DROP
+  notify: Commit firewall
+
+# ── Firewall: zone → wan forwardings ─────────────────────────────────────────
+
+- name: forwarding guest → wan
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: firewall.guest_wan
+    value:
+      src: guest
+      dest: wan
+  notify: Commit firewall
+
+- name: forwarding iot → wan
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: firewall.iot_wan
+    value:
+      src: iot
+      dest: wan
+  notify: Commit firewall
+
+# ── Firewall: IoT allowlist rules ─────────────────────────────────────────────
+# IoT devices get two explicit holes into the trusted LAN.
+# Everything else from iot → lan is dropped by default (no forwarding rule).
+
+- name: firewall rule iot → Pi-hole DNS (UDP)
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: firewall.iot_dns_udp
+    value:
+      src: iot
+      dest: lan
+      dest_ip: "{{ pihole_ip }}"
+      dest_port: "53"
+      proto: udp
+      target: ACCEPT
+  notify: Commit firewall
+
+- name: firewall rule iot → Pi-hole DNS (TCP)
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: firewall.iot_dns_tcp
+    value:
+      src: iot
+      dest: lan
+      dest_ip: "{{ pihole_ip }}"
+      dest_port: "53"
+      proto: tcp
+      target: ACCEPT
+  notify: Commit firewall
+
+- name: firewall rule iot → Jellyfin
+  gekmihesg.openwrt.openwrt_uci:
+    command: set
+    key: firewall.iot_jellyfin
+    value:
+      src: iot
+      dest: lan
+      dest_ip: "{{ jellyfin_ip }}"
+      dest_port: "{{ jellyfin_port }}"
+      proto: tcp
+      target: ACCEPT
+  notify: Commit firewall
+
+# ── Apply ─────────────────────────────────────────────────────────────────────
+# Handlers commit each config section; this final task reloads all services.
+# It runs after all handlers have flushed — Ansible guarantees handler order
+# within a play, but 'reload_config' touches network+dhcp+firewall together.
+
+- name: Flush handlers before reload
+  meta: flush_handlers
+
+- name: Reload all config
+  gekmihesg.openwrt.openwrt_command:
+    command: reload_config

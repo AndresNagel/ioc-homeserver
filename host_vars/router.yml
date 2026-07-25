@@ -1,0 +1,37 @@
+---
+# GL.iNet GL-MT6000 (Flint 2) — OpenWrt, managed via gekmihesg.openwrt collection
+#
+# Physical layout:
+#   WAN  — upstream internet
+#   LAN  — single trunk port (2.5GbE) to downstream switch/APs
+#          carries VLAN 1 (untagged/trusted), VLAN 20 (guest), VLAN 30 (iot)
+#
+# Verify the DSA port name with: ssh root@192.168.1.254 'uci show network'
+# It is probably 'lan1' but may differ on the Flint 2's DSA layout.
+router_lan_trunk_port: "lan1"
+
+# --- Trusted (VLAN 1, untagged — existing LAN, unchanged) ---
+router_trusted_ip:   "192.168.1.254"
+router_trusted_cidr: "192.168.1.0/24"
+
+# --- Guest (VLAN 20) ---
+router_guest_vlan:       20
+router_guest_ip:         "192.168.20.1"
+router_guest_netmask:    "255.255.255.0"
+router_guest_dhcp_start: 100
+router_guest_dhcp_limit: 150
+router_guest_dns:
+  - "8.8.8.8"
+  - "8.8.4.4"
+
+# --- IoT (VLAN 30) ---
+router_iot_vlan:       30
+router_iot_ip:         "192.168.30.1"
+router_iot_netmask:    "255.255.255.0"
+router_iot_dhcp_start: 100
+router_iot_dhcp_limit: 150
+
+# --- Downstream service IPs (on trusted LAN) ---
+pihole_ip:    "192.168.1.100"
+jellyfin_ip:  "192.168.1.102"
+jellyfin_port: 8096

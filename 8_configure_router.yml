@@ -1,0 +1,20 @@
+---
+# 8_configure_router.yml
+# Applies VLAN segmentation to the GL.iNet GL-MT6000 (Flint 2):
+#   VLAN  1 (trusted, untagged) — 192.168.1.0/24  — existing LAN, untouched
+#   VLAN 20 (guest)             — 192.168.20.0/24 — wan only, DNS 8.8.8.8/8.8.4.4
+#   VLAN 30 (iot)               — 192.168.30.0/24 — wan + Pi-hole:53 + Jellyfin:8096
+#
+# Prerequisites:
+#   ansible-galaxy collection install -r requirements.yml
+#   SSH key must be accepted on the router (add via GL.iNet web UI first run)
+#
+# Usage:
+#   ansible-playbook 8_configure_router.yml
+#   ansible-playbook 8_configure_router.yml --check   # dry-run
+
+- name: Configure router VLANs and firewall
+  hosts: router
+  gather_facts: false
+  roles:
+    - openwrt_router
