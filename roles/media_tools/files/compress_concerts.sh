@@ -34,7 +34,7 @@ for f in "$CONCERTS_MKV_DIR"/*.mkv; do
   tmp_out="$f.hevc.tmp"
 
   logger -t "$LOG_TAG" "compressing '$f' (codec=$vcodec) -> HEVC ${VIDEO_BITRATE}bps"
-  if ffmpeg -hide_banner -loglevel warning -y \
+  if ffmpeg -hide_banner -loglevel warning -y -nostdin \
       -hwaccel vaapi -hwaccel_device "$VAAPI_DEVICE" -hwaccel_output_format vaapi \
       -i "$f" \
       -map 0 \

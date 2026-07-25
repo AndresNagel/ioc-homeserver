@@ -2,8 +2,8 @@
 Description=Daily media library normalization pass
 
 [Timer]
-OnCalendar=daily
-RandomizedDelaySec=1h
+OnCalendar=*-*-* 02:00:00
+RandomizedDelaySec=15m
 Persistent=true
 
 [Install]

@@ -78,6 +78,7 @@
   copy:
     src: normalize-media.timer
     dest: /etc/systemd/system/normalize-media.timer
+  register: normalize_media_timer
 
 - name: Enable and start normalize-media timer
   systemd:
@@ -85,3 +86,128 @@
     enabled: true
     state: started
     daemon_reload: true
+
+# A running timer doesn't recompute its next elapse time just from the unit
+# file changing on disk + a daemon-reload - it needs an explicit restart, or
+# a schedule change (e.g. moving this to a night-only window) silently keeps
+# using the old schedule until the next reboot.
+- name: Restart normalize-media timer to pick up schedule changes
+  systemd:
+    name: normalize-media.timer
+    state: restarted
+  when: normalize_media_timer.changed
+
+# On-demand catch-up pass outside the timer's normal 1am-7am window, e.g.
+# after the timer sat disabled and a backlog built up. Runs at the lowest
+# CPU/IO scheduling priority and in the background (async/poll:0) so it
+# doesn't block this playbook or compete with active playback. Opt in with
+# `--tags normalize_media_now`. Progress: `journalctl -t normalize-media -f`.
+- name: Trigger an on-demand low-priority normalize-media pass (bypasses night window)
+  command: nice -n 19 ionice -c3 /usr/local/bin/normalize_media.sh
+  environment:
+    NIGHT_START_HOUR: "0"
+    NIGHT_END_HOUR: "24"
+  async: 21600
+  poll: 0
+  changed_when: true
+  tags: [normalize_media_now, never]
+
+- name: Deploy fix_media_permissions.sh
+  copy:
+    src: fix_media_permissions.sh
+    dest: /usr/local/bin/fix_media_permissions.sh
+    mode: '0755'
+
+- name: Deploy fix-media-permissions systemd service
+  copy:
+    src: fix-media-permissions.service
+    dest: /etc/systemd/system/fix-media-permissions.service
+
+- name: Deploy fix-media-permissions systemd timer
+  copy:
+    src: fix-media-permissions.timer
+    dest: /etc/systemd/system/fix-media-permissions.timer
+
+- name: Enable and start fix-media-permissions timer
+  systemd:
+    name: fix-media-permissions.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Run an immediate fix-media-permissions pass
+  command: /usr/local/bin/fix_media_permissions.sh
+  changed_when: true
+
+# One-off: extract individual songs from the Malón concert MKVs into opus
+# files for the Navidrome library, replacing the hand-built rips that were
+# tagged outside Ansible. Not part of a normal run — opt in with
+# `--tags extract_concert_songs`. See roles/media_tools/files/extract_concert_songs.py
+# and the matching navidrome-side deploy tasks in 2_configure_services.yml.
+- name: Ensure concert_extracts covers dir exists
+  file:
+    path: /mnt/ssd2tb/media/concert_extracts/.covers
+    state: directory
+    mode: '0755'
+  tags: [extract_concert_songs, never]
+
+- name: Extract embedded cover art from an existing El Regreso track (source for re-tagging)
+  command: >
+    ffmpeg -y -i "/data/media/music/Malón/2012 - El regreso más esperado/Malón - El regreso más esperado - 01 - Sintoma de la infección.opus"
+    -map 0:v:0 -c copy /tmp/malon_regreso_cover.jpg
+  delegate_to: navidrome
+  changed_when: true
+  tags: [extract_concert_songs, never]
+
+- name: Ensure local relay dir exists
+  file:
+    path: /tmp/malon_extract_relay
+    state: directory
+    mode: '0755'
+  delegate_to: localhost
+  tags: [extract_concert_songs, never]
+
+# rsync refuses a third-party remote-to-remote transfer ("source and
+# destination cannot both be remote"), so this hops through a local temp
+# dir on the controller instead of copying navidrome -> pve directly.
+- name: Pull cover art from navidrome to local relay
+  command: >
+    rsync -az -e ssh
+    "root@{{ hostvars['navidrome'].ansible_host }}:{{ item.src }}"
+    "/tmp/malon_extract_relay/{{ item.dest }}"
+  delegate_to: localhost
+  changed_when: true
+  loop:
+    - { src: "/data/media/music/Malón/2013 - 360/cover.jpg", dest: "360.jpg" }
+    - { src: "/tmp/malon_regreso_cover.jpg", dest: "regreso.jpg" }
+  tags: [extract_concert_songs, never]
+
+- name: Push cover art from local relay to pve
+  command: >
+    rsync -az -e ssh
+    "/tmp/malon_extract_relay/{{ item }}"
+    "root@{{ hostvars['pve'].ansible_host }}:/mnt/ssd2tb/media/concert_extracts/.covers/{{ item }}"
+  delegate_to: localhost
+  changed_when: true
+  loop:
+    - "360.jpg"
+    - "regreso.jpg"
+  tags: [extract_concert_songs, never]
+
+- name: Deploy extract_concert_songs.py
+  copy:
+    src: extract_concert_songs.py
+    dest: /usr/local/bin/extract_concert_songs.py
+    mode: '0755'
+  tags: [extract_concert_songs, never]
+
+- name: Run concert song extraction
+  command: python3 /usr/local/bin/extract_concert_songs.py
+  register: extract_songs_result
+  changed_when: true
+  tags: [extract_concert_songs, never]
+
+- name: Show extraction output
+  debug:
+    var: extract_songs_result.stdout_lines
+  tags: [extract_concert_songs, never]

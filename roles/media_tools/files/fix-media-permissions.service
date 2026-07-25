@@ -1,0 +1,8 @@
+[Unit]
+Description=Ensure media library subfolders stay world-writable (Jellyfin delete/rename access)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/fix_media_permissions.sh
+Nice=19
+IOSchedulingClass=idle

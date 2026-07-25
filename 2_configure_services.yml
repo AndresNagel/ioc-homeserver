@@ -69,6 +69,80 @@
   hosts: navidrome
   roles:
     - navidrome
+  post_tasks:
+    # Deploy side of the one-off Malón concert song extraction (see
+    # roles/media_tools/files/extract_concert_songs.py). Opt in with
+    # `--tags extract_concert_songs`; run pve's media_tools tasks first so
+    # /mnt/ssd2tb/media/concert_extracts/ is populated.
+    - name: Ensure Navidrome music library backup dir exists
+      file:
+        path: /data/media/.backup
+        state: directory
+        mode: '0755'
+      tags: [extract_concert_songs, never]
+
+    - name: Get backup timestamp
+      command: date +%Y%m%dT%H%M%S
+      register: extract_songs_backup_ts
+      changed_when: false
+      tags: [extract_concert_songs, never]
+
+    - name: Snapshot existing album folders before overwrite
+      command: >
+        tar -czf "/data/media/.backup/{{ item | regex_replace('[^A-Za-z0-9]+', '-') }}-{{ extract_songs_backup_ts.stdout }}.tar.gz"
+        -C "/data/media/music/Malón" "{{ item }}"
+      loop:
+        - "2013 - 360"
+        - "2012 - El regreso más esperado"
+      changed_when: true
+      tags: [extract_concert_songs, never]
+
+    # rsync refuses a third-party remote-to-remote transfer ("source and
+    # destination cannot both be remote"), so this hops through a local
+    # temp dir on the controller instead of copying pve -> navidrome directly.
+    - name: Ensure local relay dir exists
+      file:
+        path: /tmp/malon_extract_relay
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      tags: [extract_concert_songs, never]
+
+    - name: Pull freshly extracted album folders from pve to local relay
+      command: >
+        rsync -az --delete -e ssh
+        "root@{{ hostvars['pve'].ansible_host }}:/mnt/ssd2tb/media/concert_extracts/{{ item }}/"
+        "/tmp/malon_extract_relay/{{ item }}/"
+      delegate_to: localhost
+      changed_when: true
+      loop:
+        - "2013 - 360"
+        - "2012 - El regreso más esperado"
+      tags: [extract_concert_songs, never]
+
+    - name: Push extracted album folders from local relay to navidrome
+      command: >
+        rsync -az --delete -e ssh
+        "/tmp/malon_extract_relay/{{ item }}/"
+        "root@{{ hostvars['navidrome'].ansible_host }}:/data/media/music/Malón/{{ item }}/"
+      delegate_to: localhost
+      changed_when: true
+      loop:
+        - "2013 - 360"
+        - "2012 - El regreso más esperado"
+      tags: [extract_concert_songs, never]
+
+    - name: Remove obsolete tag_malon.sh (new files arrive already tagged)
+      file:
+        path: "/data/media/music/Malón/2013 - 360/tag_malon.sh"
+        state: absent
+      tags: [extract_concert_songs, never]
+
+    - name: Restart navidrome to rescan the library immediately
+      systemd:
+        name: navidrome
+        state: restarted
+      tags: [extract_concert_songs, never]
 
 - name: Configure Semaphore
   hosts: semaphore
