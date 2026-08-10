@@ -42,7 +42,15 @@ all:
           # multi-torrent load, and a single core saturated by peer traffic
           # (20-40k interrupts/sec) was starving the RPC handler, making the
           # web UI take ~10s to render.
-          lxc_memory: 2048
+          # Bumped again 2048 -> 4096 on 2026-08-10: roles/transmission now
+          # builds transmission-daemon from source (Debian's package is stuck
+          # on a stale pre-release), and a parallel `cmake --build -j2` alone
+          # peaked at ~2.1GB, nearly OOM-killing the container mid-build.
+          # Runtime footprint is ~22MB, so this is headroom for the *next*
+          # source rebuild (triggered automatically whenever a new stable
+          # Transmission release ships), not steady-state need - don't lower
+          # it back down.
+          lxc_memory: 4096
           lxc_cores: 2
           backup_root: /var/lib/transmission-daemon/info
 

@@ -32,6 +32,123 @@
     state: present
     update_cache: true
 
+# Debian trixie packages transmission-daemon 4.1.0~beta2 (a March 2025
+# pre-release snapshot from before 4.1.0 stable shipped) and, unlike a
+# rolling repo, never updates it beyond security patches - it's frozen until
+# the next Debian stable release. Upstream itself is actively developed
+# (quarterly stable releases), so instead of running a stale beta we build
+# current stable from source and point the systemd unit at that binary,
+# keeping the apt package only for its base unit file/user/library deps.
+- name: Install Transmission build dependencies
+  apt:
+    name:
+      - build-essential
+      - cmake
+      - pkg-config
+      - libcurl4-openssl-dev
+      - libssl-dev
+      - zlib1g-dev
+      - libevent-dev
+      - libpsl-dev
+      - libb64-dev
+      - libdeflate-dev
+      - libminiupnpc-dev
+      - libnatpmp-dev
+      - libsystemd-dev
+    state: present
+    update_cache: true
+
+- name: Get latest Transmission release
+  uri:
+    url: https://api.github.com/repos/transmission/transmission/releases/latest
+    return_content: true
+  register: transmission_release
+
+- name: Set transmission version fact
+  set_fact:
+    transmission_version: "{{ transmission_release.json.tag_name }}"
+
+- name: Check currently built transmission-daemon version
+  command: /usr/local/bin/transmission-daemon --version
+  register: transmission_built_version
+  changed_when: false
+  failed_when: false
+
+- name: Build and install Transmission {{ transmission_version }} from source
+  when: transmission_version not in (transmission_built_version.stdout | default(''))
+  block:
+    - name: Download Transmission {{ transmission_version }} source tarball
+      get_url:
+        url: "https://github.com/transmission/transmission/releases/download/{{ transmission_version }}/transmission-{{ transmission_version }}.tar.xz"
+        dest: "/tmp/transmission-{{ transmission_version }}.tar.xz"
+        mode: '0644'
+
+    - name: Remove any stale extracted source tree
+      file:
+        path: "/usr/local/src/transmission-{{ transmission_version }}"
+        state: absent
+
+    - name: Extract Transmission source tarball
+      unarchive:
+        src: "/tmp/transmission-{{ transmission_version }}.tar.xz"
+        dest: /usr/local/src
+        remote_src: true
+
+    # Release tarball ships pre-built web/public_html assets, so this doesn't
+    # need Node/npm (REBUILD_WEB defaults off). GTK/Qt/CLI/tests/docs/lib are
+    # all skipped - only the daemon and CLI utils (transmission-remote etc.)
+    # are needed here.
+    - name: Configure Transmission build
+      command: >
+        cmake -B build -S .
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_INSTALL_PREFIX=/usr/local
+        -DENABLE_DAEMON=ON
+        -DENABLE_UTILS=ON
+        -DENABLE_CLI=OFF
+        -DENABLE_GTK=OFF
+        -DENABLE_QT=OFF
+        -DENABLE_MAC=OFF
+        -DENABLE_TESTS=OFF
+        -DINSTALL_WEB=ON
+        -DINSTALL_DOC=OFF
+        -DINSTALL_LIB=OFF
+      args:
+        chdir: "/usr/local/src/transmission-{{ transmission_version }}"
+
+    - name: Build Transmission (several minutes)
+      command: "cmake --build build -j{{ ansible_processor_vcpus | default(2) }}"
+      args:
+        chdir: "/usr/local/src/transmission-{{ transmission_version }}"
+
+    - name: Install Transmission binaries
+      command: cmake --install build
+      args:
+        chdir: "/usr/local/src/transmission-{{ transmission_version }}"
+      notify: Restart transmission-daemon
+
+    - name: Clean up source tree and tarball
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/usr/local/src/transmission-{{ transmission_version }}"
+        - "/tmp/transmission-{{ transmission_version }}.tar.xz"
+
+# cmake --install (WITH_SYSTEMD, auto-enabled by libsystemd-dev) drops its own
+# unit at /usr/local/lib/systemd/system, which systemd loads *before*
+# /lib/systemd/system - shadowing the apt package's unit instead of layering
+# under our override.conf drop-in. That unit hardcodes User=transmission
+# (which doesn't exist here; our user is debian-transmission), so the
+# daemon fails to start with "Failed to determine user credentials". Remove
+# it so systemd falls back to the apt package's unit (User=debian-transmission,
+# Type=notify, hardening) with our drop-in applied on top.
+- name: Remove cmake-installed systemd unit (shadows the apt package's unit)
+  file:
+    path: /usr/local/lib/systemd/system/transmission-daemon.service
+    state: absent
+  register: transmission_shadow_unit_removed
+
 - name: Ensure systemd override directory exists
   file:
     path: /etc/systemd/system/transmission-daemon.service.d
@@ -46,7 +163,7 @@
     content: |
       [Service]
       ExecStart=
-      ExecStart=/usr/bin/transmission-daemon -f --config-dir /var/lib/transmission-daemon/info --allowed *.*.*.*
+      ExecStart=/usr/local/bin/transmission-daemon -f --config-dir /var/lib/transmission-daemon/info --allowed *.*.*.*
     mode: '0644'
   notify:
     - Reload systemd
