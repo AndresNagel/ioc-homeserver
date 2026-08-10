@@ -26,6 +26,7 @@ All LXCs are unprivileged, built from the same base image
 | [FlareSolverr](flaresolverr.md) | 111 | 192.168.1.111 | `flaresolverr.internal` | — (internal API only) |
 | [Bazarr](bazarr.md) | 112 | 192.168.1.112 | `bazarr.internal` | bazarr.welpes.com |
 | [Caddy](caddy.md) | 113 | 192.168.1.113 | — | terminates all `*.welpes.com` above |
+| [Audiobookshelf](audiobookshelf.md) | 115 | 192.168.1.115 | `audiobookshelf.internal` | audiobookshelf.welpes.com |
 
 Notes:
 - Public domains only resolve on the LAN: Pi-hole points every
