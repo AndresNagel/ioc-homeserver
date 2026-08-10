@@ -123,3 +123,22 @@
     name: transmission-daemon
     state: started
   when: transmission_download_dir.rc != 0
+
+# Transmission only creates a category subdirectory the first time a torrent
+# is added under it, and removes nothing itself - but an empty category dir
+# can still disappear from manual cleanup (e.g. the 2026-06-15 disk cleanup).
+# Sonarr/Lidarr each run a RemotePathMappingCheck health check that errors
+# out if their category dir isn't present, even though Transmission would
+# happily recreate it on the next grab. Pre-create all of them so the arr
+# apps' health checks stay clean regardless of recent download activity.
+- name: Ensure arr download category directories exist
+  file:
+    path: "/data/torrents/{{ item }}"
+    state: directory
+    owner: debian-transmission
+    group: debian-transmission
+    mode: '0755'
+  loop:
+    - lidarr
+    - radarr
+    - tv-sonarr
