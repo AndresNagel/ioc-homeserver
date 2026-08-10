@@ -1,0 +1,8 @@
+---
+# host_vars/pve.yml
+
+# Temporarily disabled 2026-07-30 at user request. Re-enable by removing
+# this override (or setting back to true) and re-running 0_prepare_host.yml.
+# normalize-media does daily downmix/reencode of >2ch audio and >1080p
+# video on pve - disabling just pauses that background transcode work.
+normalize_media_enabled: false

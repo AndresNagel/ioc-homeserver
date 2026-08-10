@@ -205,15 +205,15 @@
     dest: /etc/systemd/system/ssd2tb-autorecover.timer
   register: ssd2tb_autorecover_timer
 
-- name: Enable and start ssd2tb-autorecover timer
+- name: Enable/disable and start/stop ssd2tb-autorecover timer
   systemd:
     name: ssd2tb-autorecover.timer
-    enabled: true
-    state: started
+    enabled: "{{ ssd2tb_autorecover_enabled }}"
+    state: "{{ 'started' if ssd2tb_autorecover_enabled else 'stopped' }}"
     daemon_reload: true
 
 - name: Restart ssd2tb-autorecover timer to pick up schedule changes
   systemd:
     name: ssd2tb-autorecover.timer
     state: restarted
-  when: ssd2tb_autorecover_timer.changed
+  when: ssd2tb_autorecover_timer.changed and ssd2tb_autorecover_enabled

@@ -80,11 +80,11 @@
     dest: /etc/systemd/system/normalize-media.timer
   register: normalize_media_timer
 
-- name: Enable and start normalize-media timer
+- name: Enable/disable and start/stop normalize-media timer
   systemd:
     name: normalize-media.timer
-    enabled: true
-    state: started
+    enabled: "{{ normalize_media_enabled }}"
+    state: "{{ 'started' if normalize_media_enabled else 'stopped' }}"
     daemon_reload: true
 
 # A running timer doesn't recompute its next elapse time just from the unit
@@ -95,7 +95,7 @@
   systemd:
     name: normalize-media.timer
     state: restarted
-  when: normalize_media_timer.changed
+  when: normalize_media_timer.changed and normalize_media_enabled
 
 # On-demand catch-up pass outside the timer's normal 1am-7am window, e.g.
 # after the timer sat disabled and a backlog built up. Runs at the lowest

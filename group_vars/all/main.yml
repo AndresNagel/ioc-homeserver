@@ -46,6 +46,14 @@ media_downloads:        "{{ media_root }}/downloads"
 media_downloads_done:   "{{ media_root }}/downloads/complete"
 media_downloads_inc:    "{{ media_root }}/downloads/incomplete"
 
+# --- ssd2tb emergency_ro auto-recovery timer (roles/proxmox_host) ---
+# Override to false in host_vars/pve.yml to temporarily disable.
+ssd2tb_autorecover_enabled: true
+
+# --- normalize-media timer (roles/media_tools) ---
+# Override to false in host_vars/pve.yml to temporarily disable.
+normalize_media_enabled: true
+
 # --- NFS (future NAS) ---
 # Set nfs_enabled: true and fill these when you add a NAS.
 # Run: ansible-playbook -i inventory.yml 0_prepare_host.yml
