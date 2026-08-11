@@ -1,0 +1,11 @@
+[Unit]
+Description=Fetch missing synced lyrics (.lrc) for the music library from LRCLIB
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /usr/local/bin/fetch_lyrics.py
+Nice=19
+IOSchedulingClass=idle
+SyslogIdentifier=fetch-lyrics
+StandardOutput=journal
+StandardError=journal

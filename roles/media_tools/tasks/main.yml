@@ -139,6 +139,43 @@
   command: /usr/local/bin/fix_media_permissions.sh
   changed_when: true
 
+# Backfills .lrc synced lyrics for the music library from LRCLIB (free,
+# keyless). Exact-match only (see fetch_lyrics.py) - cover songs and live
+# recordings that don't match a studio original verbatim are left without a
+# .lrc rather than getting the wrong lyrics, so they stay visibly blank for
+# a manual tap-to-sync fix. Progress: `journalctl -t fetch-lyrics -f`.
+- name: Deploy fetch_lyrics.py
+  copy:
+    src: fetch_lyrics.py
+    dest: /usr/local/bin/fetch_lyrics.py
+    mode: '0755'
+
+- name: Deploy fetch-lyrics systemd service
+  copy:
+    src: fetch-lyrics.service
+    dest: /etc/systemd/system/fetch-lyrics.service
+
+- name: Deploy fetch-lyrics systemd timer
+  copy:
+    src: fetch-lyrics.timer
+    dest: /etc/systemd/system/fetch-lyrics.timer
+
+- name: Enable and start fetch-lyrics timer
+  systemd:
+    name: fetch-lyrics.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# On-demand run so the initial library backfill doesn't wait for the daily
+# timer. Low priority/background, same as the normalize-media catch-up task.
+- name: Trigger an on-demand fetch-lyrics pass
+  command: nice -n 19 ionice -c3 /usr/bin/python3 /usr/local/bin/fetch_lyrics.py
+  async: 21600
+  poll: 0
+  changed_when: true
+  tags: [fetch_lyrics_now, never]
+
 # One-off: extract individual songs from the Malón concert MKVs into opus
 # files for the Navidrome library, replacing the hand-built rips that were
 # tagged outside Ansible. Not part of a normal run — opt in with
