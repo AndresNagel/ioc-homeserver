@@ -123,6 +123,28 @@
         icon: semaphore.png
         href: https://semaphore.welpes.com
         description: Ansible CI/CD
+        widget:
+          type: customapi
+          url: http://192.168.1.107:3000/api/project/1/templates/8
+          refreshInterval: 60000
+          headers:
+            Authorization: "Bearer {{ '{{HOMEPAGE_VAR_SEMAPHORE_TOKEN}}' }}"
+          mappings:
+            - field: last_task.status
+              label: Weekly updates
+              format: text
+              remap:
+                - value: success
+                  to: "✅ OK"
+                - value: error
+                  to: "❌ FAILED"
+                - value: running
+                  to: "⏳ Running"
+                - any: true
+                  to: "❓ Unknown"
+            - field: last_task.end
+              label: Last run
+              format: relativeDate
 
     - Forgejo:
         icon: forgejo.png
