@@ -1,7 +1,7 @@
 ---
 # roles/openwrt_router/tasks/main.yml
 # Configures GL.iNet GL-MT6000 (Flint 2) via UCI (no Python required — uses
-# gekmihesg.openwrt connection plugin over SSH).
+# community.openwrt's shell-based action plugins over a plain SSH connection).
 #
 # Run order matters: network → dhcp → firewall → commit each config.
 # A full 'reload_config' at the end applies everything atomically.
@@ -11,7 +11,7 @@
 # VLAN 1 (trusted) already exists as the native untagged LAN — not touched here.
 
 - name: bridge-vlan guest (VLAN {{ router_guest_vlan }})
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: "network.@bridge-vlan[?vlan={{ router_guest_vlan }}]"
     value:
@@ -21,7 +21,7 @@
   notify: Commit network
 
 - name: bridge-vlan iot (VLAN {{ router_iot_vlan }})
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: "network.@bridge-vlan[?vlan={{ router_iot_vlan }}]"
     value:
@@ -33,7 +33,7 @@
 # ── Network: logical interfaces ───────────────────────────────────────────────
 
 - name: network interface guest
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: network.guest
     value:
@@ -44,7 +44,7 @@
   notify: Commit network
 
 - name: network interface iot
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: network.iot
     value:
@@ -59,7 +59,7 @@
 # IoT:   DNS points to Pi-hole (192.168.1.100) — lets Pi-hole block ads for TVs.
 
 - name: DHCP pool guest
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: dhcp.guest
     value:
@@ -70,14 +70,14 @@
   notify: Commit dhcp
 
 - name: DHCP guest force DNS
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: dhcp.guest.dhcp_option
     value: "6,{{ router_guest_dns | join(',') }}"
   notify: Commit dhcp
 
 - name: DHCP pool iot
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: dhcp.iot
     value:
@@ -88,7 +88,7 @@
   notify: Commit dhcp
 
 - name: DHCP iot DNS (Pi-hole)
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: dhcp.iot.dhcp_option
     value: "6,{{ pihole_ip }}"
@@ -99,7 +99,7 @@
 # iot:   same policy. iptables rules below open the two specific holes.
 
 - name: firewall zone guest
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: firewall.guest
     value:
@@ -111,7 +111,7 @@
   notify: Commit firewall
 
 - name: firewall zone iot
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: firewall.iot
     value:
@@ -125,7 +125,7 @@
 # ── Firewall: zone → wan forwardings ─────────────────────────────────────────
 
 - name: forwarding guest → wan
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: firewall.guest_wan
     value:
@@ -134,7 +134,7 @@
   notify: Commit firewall
 
 - name: forwarding iot → wan
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: firewall.iot_wan
     value:
@@ -147,7 +147,7 @@
 # Everything else from iot → lan is dropped by default (no forwarding rule).
 
 - name: firewall rule iot → Pi-hole DNS (UDP)
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: firewall.iot_dns_udp
     value:
@@ -160,7 +160,7 @@
   notify: Commit firewall
 
 - name: firewall rule iot → Pi-hole DNS (TCP)
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: firewall.iot_dns_tcp
     value:
@@ -173,7 +173,7 @@
   notify: Commit firewall
 
 - name: firewall rule iot → Jellyfin
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: set
     key: firewall.iot_jellyfin
     value:
@@ -194,5 +194,5 @@
   meta: flush_handlers
 
 - name: Reload all config
-  gekmihesg.openwrt.openwrt_command:
-    command: reload_config
+  community.openwrt.command:
+    cmd: reload_config

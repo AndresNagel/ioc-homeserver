@@ -161,8 +161,10 @@ library is compliant.
 
 Runs `apt upgrade` (safe upgrade, no removals) plus `autoremove` across the
 Proxmox host and every LXC. Wired into Semaphore as task template
-"7 - Update Packages", scheduled weekly (Sunday 04:00 Europe/Madrid). Never
-does a full/dist-upgrade and never reboots automatically — if a host needs a
+"7 - Update Packages" (id 8), scheduled weekly, Sunday 03:00 UTC (the
+Semaphore LXC's clock is `Etc/UTC`, not the `Europe/Madrid` set elsewhere —
+check via Semaphore's Schedule view if you want to retime it). Never does a
+full/dist-upgrade and never reboots automatically — if a host needs a
 reboot to finish (e.g. a kernel bump), the playbook's final summary task
 calls it out by name so that stays a deliberate, human-triggered step.
 

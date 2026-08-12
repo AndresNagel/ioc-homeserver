@@ -1,15 +1,15 @@
 ---
 - name: Commit network
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: commit
     key: network
 
 - name: Commit dhcp
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: commit
     key: dhcp
 
 - name: Commit firewall
-  gekmihesg.openwrt.openwrt_uci:
+  community.openwrt.uci:
     command: commit
     key: firewall

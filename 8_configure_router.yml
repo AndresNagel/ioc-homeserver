@@ -11,10 +11,16 @@
 #
 # Usage:
 #   ansible-playbook 8_configure_router.yml
-#   ansible-playbook 8_configure_router.yml --check   # dry-run
+#   ansible-playbook 8_configure_router.yml --check --diff   # dry-run
 
 - name: Configure router VLANs and firewall
   hosts: router
   gather_facts: false
   roles:
+    - role: community.openwrt.init
+      vars:
+        # We don't need opkg cache refreshes / recommended packages installed
+        # just to push UCI config — keep this role's footprint on the router
+        # to exactly what openwrt_router does, nothing more.
+        openwrt_install_recommended_packages: false
     - openwrt_router

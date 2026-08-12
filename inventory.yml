@@ -162,7 +162,6 @@ all:
         flint2:
           ansible_host: 192.168.1.254
           ansible_user: root
-          ansible_connection: gekmihesg.openwrt.openwrt
 
     # Hosts with persistent config/state worth backing up — see 3_backup.yml.
     # caddy and flaresolverr are excluded: stateless / fully templated.
