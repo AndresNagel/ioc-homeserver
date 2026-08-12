@@ -1,0 +1,50 @@
+---
+# 7_update_packages.yml
+# Applies pending apt security/bugfix updates across the Proxmox host and
+# every LXC (everything reachable over SSH — the router is OpenWrt and isn't
+# apt-based, so it's excluded). Never does a `dist-upgrade`/full-upgrade and
+# never reboots automatically, even if a kernel update leaves a host wanting
+# one — that's flagged in the summary for a human to act on deliberately.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml 7_update_packages.yml --vault-password-file .vault_pass
+#
+# Run a single host only:
+#   ansible-playbook -i inventory.yml 7_update_packages.yml --limit forgejo --vault-password-file .vault_pass
+
+- name: Apply pending package updates
+  hosts: proxmox_host,lxc_containers
+  tasks:
+    - name: Update apt cache and upgrade all packages (safe upgrade, no removals)
+      apt:
+        update_cache: true
+        upgrade: safe
+        autoremove: true
+
+    - name: Check whether a reboot is now recommended
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+
+    - name: Record reboot-required state for the summary
+      set_fact:
+        needs_reboot: "{{ reboot_required_file.stat.exists }}"
+
+- name: Summarize results
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Report hosts that now want a reboot
+      debug:
+        msg: "{{ item }} needs a reboot to finish applying updates"
+      loop: "{{ groups['proxmox_host'] + groups['lxc_containers'] }}"
+      when: hostvars[item].needs_reboot | default(false)
+
+    - name: Report if nothing needs a reboot
+      debug:
+        msg: "All hosts updated, no reboots required."
+      when: >-
+        (groups['proxmox_host'] + groups['lxc_containers'])
+        | map('extract', hostvars, 'needs_reboot')
+        | select | list | length == 0

@@ -157,6 +157,26 @@ means ffmpeg errored on that file. Once `journalctl -t normalize-media`
 stops producing new `normalizing` lines on consecutive runs, the whole
 library is compliant.
 
+### Package updates (`7_update_packages.yml`)
+
+Runs `apt upgrade` (safe upgrade, no removals) plus `autoremove` across the
+Proxmox host and every LXC. Wired into Semaphore as task template
+"7 - Update Packages", scheduled weekly (Sunday 04:00 Europe/Madrid). Never
+does a full/dist-upgrade and never reboots automatically — if a host needs a
+reboot to finish (e.g. a kernel bump), the playbook's final summary task
+calls it out by name so that stays a deliberate, human-triggered step.
+
+```bash
+# Run manually, all hosts:
+ansible-playbook -i inventory.yml 7_update_packages.yml --vault-password-file .vault_pass
+
+# Run manually, single host:
+ansible-playbook -i inventory.yml 7_update_packages.yml --limit forgejo --vault-password-file .vault_pass
+```
+
+The router (OpenWrt) isn't included — it's not apt-based and needs a separate
+`sysupgrade` process, not automated here.
+
 ---
 
 ## Service notes
