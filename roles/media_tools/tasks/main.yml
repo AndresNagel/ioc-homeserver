@@ -6,9 +6,9 @@
 # HEVC compression pass for WiFi-friendly streaming, and a daily pass
 # normalizing the movies/series libraries to 1080p HEVC + stereo AAC.
 
-- name: Install mkvtoolnix, ffmpeg and Intel VAAPI driver (for QuickSync)
+- name: Install mkvtoolnix, ffmpeg, Intel VAAPI driver (for QuickSync) and python3-mutagen
   apt:
-    name: [mkvtoolnix, ffmpeg, intel-media-va-driver, vainfo]
+    name: [mkvtoolnix, ffmpeg, intel-media-va-driver, vainfo, python3-mutagen]
     state: present
 
 - name: Deploy remux_concerts.sh
@@ -196,6 +196,16 @@
   changed_when: true
   tags: [extract_concert_songs, never]
 
+# Unlike El Regreso, this album never had a loose cover.jpg in its library
+# folder - only embedded per-track art - so pull it the same way.
+- name: Extract embedded cover art from an existing 360 track (source for re-tagging)
+  command: >
+    ffmpeg -y -i "/data/media/music/Malón/2013 - 360/02 Malón Mestizo.opus"
+    -map 0:v:0 -c copy /tmp/malon_360_cover.jpg
+  delegate_to: navidrome
+  changed_when: true
+  tags: [extract_concert_songs, never]
+
 - name: Ensure local relay dir exists
   file:
     path: /tmp/malon_extract_relay
@@ -215,7 +225,7 @@
   delegate_to: localhost
   changed_when: true
   loop:
-    - { src: "/data/media/music/Malón/2013 - 360/cover.jpg", dest: "360.jpg" }
+    - { src: "/tmp/malon_360_cover.jpg", dest: "360.jpg" }
     - { src: "/tmp/malon_regreso_cover.jpg", dest: "regreso.jpg" }
   tags: [extract_concert_songs, never]
 

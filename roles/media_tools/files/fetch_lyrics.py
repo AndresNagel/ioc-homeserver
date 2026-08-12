@@ -8,7 +8,6 @@
 # visibly blank for a manual tap-to-sync fix. Safe to re-run: any file that
 # already has a .lrc (auto-fetched or hand-written) is left alone.
 import json
-import subprocess
 import sys
 import syslog
 import time
@@ -16,6 +15,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+
+import mutagen
 
 MUSIC_DIR = Path("/mnt/ssd2tb/media/music")
 AUDIO_EXTENSIONS = {".mp3", ".flac", ".m4a", ".ogg", ".opus", ".wav"}
@@ -35,20 +36,26 @@ def log(message: str) -> None:
     print(message)
 
 
-def ffprobe_tags(path: Path) -> dict:
-    result = subprocess.run(
-        ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", str(path)],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    fmt = json.loads(result.stdout).get("format", {})
-    tags = {k.lower(): v for k, v in fmt.get("tags", {}).items()}
+def read_tags(path: Path) -> dict:
+    # ffprobe can't parse vorbis-comment tags out of Ogg Opus files in this
+    # environment (confirmed on even a minimal synthetic file with no source
+    # metadata at all - mutagen reads the same file back fine), which
+    # silently misclassified every .opus track in the library as untagged.
+    # mutagen is a proper tagging library and reads MP3/FLAC/Opus/Vorbis/MP4
+    # uniformly through the same easy-tags interface.
+    audio = mutagen.File(str(path), easy=True)
+    if audio is None:
+        raise ValueError("mutagen could not identify this file")
+
+    def first(key: str) -> str:
+        values = audio.get(key) or [""]
+        return values[0]
+
     return {
-        "artist": tags.get("artist", ""),
-        "title": tags.get("title", ""),
-        "album": tags.get("album", ""),
-        "duration": float(fmt.get("duration", 0)),
+        "artist": first("artist"),
+        "title": first("title"),
+        "album": first("album"),
+        "duration": float(audio.info.length) if audio.info else 0.0,
     }
 
 
@@ -87,8 +94,8 @@ def main() -> int:
             continue
 
         try:
-            tags = ffprobe_tags(path)
-        except (subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+            tags = read_tags(path)
+        except (ValueError, mutagen.MutagenError) as exc:
             log(f"ERROR reading tags: {path} ({exc})")
             errors += 1
             continue
