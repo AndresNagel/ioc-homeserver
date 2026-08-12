@@ -1,5 +1,5 @@
 ---
-# GL.iNet GL-MT6000 (Flint 2) — OpenWrt, managed via gekmihesg.openwrt collection
+# GL.iNet GL-MT6000 (Flint 2) — OpenWrt, managed via community.openwrt collection
 #
 # Physical layout:
 #   WAN  — upstream internet
