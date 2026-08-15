@@ -98,7 +98,13 @@ for ch in audio:
 # On any failure, leave this empty - cleanup_orphaned_original() then skips
 # deletion entirely rather than risk removing an active torrent's data.
 ACTIVE_TORRENT_FILES="$(mktemp)"
-trap 'rm -f "$ACTIVE_TORRENT_FILES"' EXIT
+# Written by the find/while loop below with find's own exit status, since
+# process substitution otherwise hides that from the script entirely - see
+# the loop's setup comment for why that's normally desirable but leaves a
+# real find failure (e.g. an I/O error mid-scan) silently indistinguishable
+# from "backlog fully processed".
+FIND_STATUS_FILE="$(mktemp)"
+trap 'rm -f "$ACTIVE_TORRENT_FILES" "$FIND_STATUS_FILE"' EXIT
 python3 - > "$ACTIVE_TORRENT_FILES" 2>/dev/null <<'PYEOF' || : > "$ACTIVE_TORRENT_FILES"
 import json, urllib.request, urllib.error
 
@@ -182,7 +188,10 @@ mount_is_healthy() {
 # has buffered output. In a real pipeline, that SIGPIPEs find and, combined
 # with pipefail above, fails the whole script even though the early stop is
 # intentional/expected. Process substitution keeps find's exit status out
-# of the script's own, so an intentional stop stays a clean exit.
+# of the script's own, so an intentional stop stays a clean exit - but that
+# also hides a genuine find failure (e.g. an I/O error mid-scan during an
+# ssd2tb fault), which would otherwise look identical to "nothing left to
+# do". find_rc below, checked after the loop, recovers that signal.
 while IFS= read -r -d '' f; do
   hour="$(date +%H)"
   if [ "$((10#$hour))" -lt "$NIGHT_START_HOUR" ] || [ "$((10#$hour))" -ge "$NIGHT_END_HOUR" ]; then
@@ -289,13 +298,31 @@ while IFS= read -r -d '' f; do
     break
   fi
 done < <(
+  find_rc=0
   for dir in "${LIBRARY_DIRS[@]}"; do
-    find "$dir" -type f \( -iname '*.mkv' -o -iname '*.mp4' \) ! -iname '*.normalize.tmp.*' -print0
+    find "$dir" -type f \( -iname '*.mkv' -o -iname '*.mp4' \) ! -iname '*.normalize.tmp.*' -print0 || find_rc=$?
   done
+  echo "$find_rc" > "$FIND_STATUS_FILE"
 )
+
+# Unlike the per-file write-failure check, this isn't checked against
+# mount_is_healthy(): by the time the while loop finishes draining whatever
+# find had already buffered, an ssd2tb fault that caused this has typically
+# already self-healed (autorecover fixes it in ~1min), so "is it healthy
+# now" wouldn't reliably tell transient from genuine anyway. Whatever the
+# cause, the library scan didn't finish and some files may have been
+# missed - always surface that loudly rather than let it pass as a normal
+# "nothing left to do" completion. The next scheduled/on-demand run will
+# naturally retry the ones that were missed.
+find_rc="$(cat "$FIND_STATUS_FILE" 2>/dev/null)"
+if [ -n "$find_rc" ] && [ "$find_rc" -ne 0 ]; then
+  logger -t "$LOG_TAG" "find exited with status $find_rc while scanning the library - run is INCOMPLETE, see dmesg/journal for the cause"
+fi
 
 # Regenerate the status page/summary regardless of how the run ended
 # (finished the backlog, hit a genuine failure, or got cut short by a disk
 # fault) - there's always something new to show. Non-fatal: a report bug
 # should never be mistaken for a normalize_media.sh failure.
 python3 "$REPORT_SCRIPT" || logger -t "$LOG_TAG" "report generation failed (non-fatal)"
+
+exit "${find_rc:-0}"
