@@ -44,6 +44,33 @@ VIDEO_BITRATE="9M"
 MAX_BITRATE="10M"
 BUFSIZE="20M"
 LOG_TAG="normalize-media"
+HISTORY_LOG="/var/lib/normalize-media/history.jsonl"
+REPORT_SCRIPT="/usr/local/bin/normalize_media_report.py"
+
+mkdir -p "$(dirname "$HISTORY_LOG")"
+
+# Appends one line per processed file (success/failed/fault) for the
+# media-status.welpes.com report - not called for skipped/already-compliant
+# files, only real attempts. Keeps the log bounded so it never grows
+# unbounded across months of nightly runs.
+log_history() {
+  python3 -c '
+import json, sys, time
+f, before, after, status = sys.argv[1:5]
+print(json.dumps({
+    "ts": time.time(),
+    "file": f,
+    "before": int(before) if before != "-" else None,
+    "after": int(after) if after != "-" else None,
+    "status": status,
+}))
+' "$@" >> "$HISTORY_LOG"
+  tail -n 1000 "$HISTORY_LOG" > "$HISTORY_LOG.tmp" && mv "$HISTORY_LOG.tmp" "$HISTORY_LOG"
+  # Regenerate immediately (not just at end-of-run) so the status page shows
+  # live progress during a long backlog pass instead of looking stale/empty
+  # until the whole run finishes. Cheap (small file), non-fatal on failure.
+  python3 "$REPORT_SCRIPT" || logger -t "$LOG_TAG" "report generation failed (non-fatal)"
+}
 
 probe() {
   ffprobe -v error -show_entries stream=codec_type,height,channels -of json "$1" \
@@ -150,9 +177,13 @@ mount_is_healthy() {
   [[ ",$opts," == *,rw,* && "$opts" != *emergency_ro* ]]
 }
 
-for dir in "${LIBRARY_DIRS[@]}"; do
-  find "$dir" -type f \( -iname '*.mkv' -o -iname '*.mp4' \) ! -iname '*.normalize.tmp.*' -print0
-done | while IFS= read -r -d '' f; do
+# Process substitution (not a `| while`) deliberately: the loop below can
+# `break` early (night-window boundary, disk-fault stop) while find still
+# has buffered output. In a real pipeline, that SIGPIPEs find and, combined
+# with pipefail above, fails the whole script even though the early stop is
+# intentional/expected. Process substitution keeps find's exit status out
+# of the script's own, so an intentional stop stays a clean exit.
+while IFS= read -r -d '' f; do
   hour="$(date +%H)"
   if [ "$((10#$hour))" -lt "$NIGHT_START_HOUR" ] || [ "$((10#$hour))" -ge "$NIGHT_END_HOUR" ]; then
     logger -t "$LOG_TAG" "outside night window (${NIGHT_START_HOUR}:00-${NIGHT_END_HOUR}:00), stopping for tonight"
@@ -245,11 +276,26 @@ done | while IFS= read -r -d '' f; do
   }
 
   logger -t "$LOG_TAG" "normalizing '$f' (height=$height video=$needs_video audio=$needs_audio)"
+  before_size=$(stat -c %s "$f")
   rc=0
   attempt_normalize || rc=$?
-  if [ "$rc" -eq 1 ]; then
+  if [ "$rc" -eq 0 ]; then
+    log_history "$f" "$before_size" "$(stat -c %s "$f")" "success"
+  elif [ "$rc" -eq 1 ]; then
     logger -t "$LOG_TAG" "FAILED: '$f'"
+    log_history "$f" "$before_size" "-" "failed"
   elif [ "$rc" -eq 2 ]; then
+    log_history "$f" "$before_size" "-" "fault"
     break
   fi
-done
+done < <(
+  for dir in "${LIBRARY_DIRS[@]}"; do
+    find "$dir" -type f \( -iname '*.mkv' -o -iname '*.mp4' \) ! -iname '*.normalize.tmp.*' -print0
+  done
+)
+
+# Regenerate the status page/summary regardless of how the run ended
+# (finished the backlog, hit a genuine failure, or got cut short by a disk
+# fault) - there's always something new to show. Non-fatal: a report bug
+# should never be mistaken for a normalize_media.sh failure.
+python3 "$REPORT_SCRIPT" || logger -t "$LOG_TAG" "report generation failed (non-fatal)"
