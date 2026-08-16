@@ -61,3 +61,12 @@ normalize_media_enabled: true
 nfs_enabled: false
 nfs_server: ""          # e.g. 192.168.1.50 or nas.local
 nfs_export: ""          # e.g. /volume1/media
+
+# --- Bazarr AnimeTosho provider ---
+# General movie/TV subtitle providers (opensubtitles, subdl, podnapisi, etc.)
+# have poor English coverage for older/niche anime — those fansub releases
+# never made it into mainstream subtitle databases. AnimeTosho indexes them
+# directly, but requires a registered AniDB HTTP API client (not a secret,
+# just a public per-app identifier — register at anidb.net -> API Clients).
+bazarr_anidb_api_client: "welpesbazarr"
+bazarr_anidb_api_client_ver: 1
