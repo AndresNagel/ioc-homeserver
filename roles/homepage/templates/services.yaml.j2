@@ -166,3 +166,31 @@
         icon: ffmpeg.png
         href: https://semaphore.welpes.com/project/1/templates/5
         description: Run today's transcode/downmix job now
+
+    - Normalize Media Status:
+        icon: ffmpeg.png
+        href: https://media-status.welpes.com
+        description: Processed files, space saved, success/fail
+        widget:
+          type: customapi
+          url: http://192.168.1.253:8098/summary.json
+          refreshInterval: 60000
+          mappings:
+            - field: last_status
+              label: Last run
+              format: text
+              remap:
+                - value: success
+                  to: "✅ OK"
+                - value: failed
+                  to: "❌ Failed"
+                - value: fault
+                  to: "⚠️ Disk fault"
+                - any: true
+                  to: "❓ Unknown"
+            - field: today_saved_human
+              label: Saved today
+              format: text
+            - field: today_files
+              label: Files today
+              format: number

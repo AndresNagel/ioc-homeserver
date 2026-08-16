@@ -69,6 +69,40 @@
     dest: /usr/local/bin/normalize_media.sh
     mode: '0755'
 
+# media-status.welpes.com (Caddy reverse-proxies to this host on :8098) +
+# the Homepage widget both read from here. normalize_media.sh calls this
+# script itself at the end of every run - no timer needed.
+- name: Deploy normalize_media_report.py
+  copy:
+    src: normalize_media_report.py
+    dest: /usr/local/bin/normalize_media_report.py
+    mode: '0755'
+
+- name: Ensure normalize-media state dir exists
+  file:
+    path: /var/lib/normalize-media
+    state: directory
+    mode: '0755'
+
+- name: Deploy normalize-media-report systemd service
+  copy:
+    src: normalize-media-report.service
+    dest: /etc/systemd/system/normalize-media-report.service
+
+- name: Enable and start normalize-media-report service
+  systemd:
+    name: normalize-media-report.service
+    enabled: true
+    state: started
+    daemon_reload: true
+
+# Otherwise the page/widget 404s until the first normalize_media.sh run
+# generates it - harmless to re-run, produces "No runs recorded yet" if
+# history.jsonl doesn't exist.
+- name: Generate an initial (possibly empty) report
+  command: python3 /usr/local/bin/normalize_media_report.py
+  changed_when: false
+
 - name: Deploy normalize-media systemd service
   copy:
     src: normalize-media.service

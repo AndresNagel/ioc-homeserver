@@ -67,6 +67,10 @@ proxmox.welpes.com {
     }
 }
 
+media-status.welpes.com {
+    reverse_proxy 192.168.1.253:8098
+}
+
 wiki.welpes.com {
     root * /var/www/wiki
     header Cache-Control "no-cache"

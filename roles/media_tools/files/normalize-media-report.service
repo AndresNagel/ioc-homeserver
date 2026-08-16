@@ -1,0 +1,13 @@
+[Unit]
+Description=Static file server for normalize_media.sh's status report
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -m http.server 8098 --directory /var/lib/normalize-media/report --bind 0.0.0.0
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target
